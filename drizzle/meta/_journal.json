@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788714695285,
+      "tag": "0000_soft_tana_nile",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788747806801,
+      "tag": "0001_overjoyed_young_avengers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788754133341,
+      "tag": "0002_bizarre_dark_phoenix",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788787946334,
+      "tag": "0003_silent_energizer",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788789865146,
+      "tag": "0004_neat_dragon_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788838275894,
+      "tag": "0005_stale_photon",
+      "breakpoints": true
+    }
+  ]
+}

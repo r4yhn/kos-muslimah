@@ -1,0 +1,411 @@
+{
+  "id": "ec0a2c0f-668d-4f0a-b3c5-0cf3af4fdd66",
+  "prevId": "61f65dca-ea35-4da0-b7f7-150147cbb3b8",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.kamar": {
+      "name": "kamar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "no_kamar": {
+          "name": "no_kamar",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipe_kamar": {
+          "name": "tipe_kamar",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "harga_sewa": {
+          "name": "harga_sewa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status_kamar": {
+          "name": "status_kamar",
+          "type": "status_kamar",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Tersedia'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "kamar_no_kamar_unique": {
+          "name": "kamar_no_kamar_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "no_kamar"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pembayaran": {
+      "name": "pembayaran",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_penghuni": {
+          "name": "id_penghuni",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tanggal_bayar": {
+          "name": "tanggal_bayar",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bulan": {
+          "name": "bulan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tahun": {
+          "name": "tahun",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah_bayar": {
+          "name": "jumlah_bayar",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metode_bayar": {
+          "name": "metode_bayar",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keterangan": {
+          "name": "keterangan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_bayar": {
+          "name": "status_bayar",
+          "type": "status_bayar",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "pembayaran_bulan_tahun_idx": {
+          "name": "pembayaran_bulan_tahun_idx",
+          "columns": [
+            {
+              "expression": "bulan",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tahun",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pembayaran_id_penghuni_penghuni_id_fk": {
+          "name": "pembayaran_id_penghuni_penghuni_id_fk",
+          "tableFrom": "pembayaran",
+          "tableTo": "penghuni",
+          "columnsFrom": [
+            "id_penghuni"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "pembayaran_bulan_check": {
+          "name": "pembayaran_bulan_check",
+          "value": "\"pembayaran\".\"bulan\" BETWEEN 1 AND 12"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.penghuni": {
+      "name": "penghuni",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_kamar": {
+          "name": "id_kamar",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nama": {
+          "name": "nama",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jenis_kelamin": {
+          "name": "jenis_kelamin",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alamat": {
+          "name": "alamat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "no_hp": {
+          "name": "no_hp",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tgl_masuk": {
+          "name": "tgl_masuk",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "status_penghuni",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Aktif'"
+        },
+        "perlu_bayar_awal": {
+          "name": "perlu_bayar_awal",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "penghuni_id_kamar_kamar_id_fk": {
+          "name": "penghuni_id_kamar_kamar_id_fk",
+          "tableFrom": "penghuni",
+          "tableTo": "kamar",
+          "columnsFrom": [
+            "id_kamar"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'admin'"
+        },
+        "id_penghuni": {
+          "name": "id_penghuni",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_id_penghuni_penghuni_id_fk": {
+          "name": "users_id_penghuni_penghuni_id_fk",
+          "tableFrom": "users",
+          "tableTo": "penghuni",
+          "columnsFrom": [
+            "id_penghuni"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "users_id_penghuni_unique": {
+          "name": "users_id_penghuni_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id_penghuni"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.status_bayar": {
+      "name": "status_bayar",
+      "schema": "public",
+      "values": [
+        "Lunas",
+        "Belum Lunas"
+      ]
+    },
+    "public.status_kamar": {
+      "name": "status_kamar",
+      "schema": "public",
+      "values": [
+        "Tersedia",
+        "Terisi",
+        "Perbaikan"
+      ]
+    },
+    "public.status_penghuni": {
+      "name": "status_penghuni",
+      "schema": "public",
+      "values": [
+        "Aktif",
+        "Keluar"
+      ]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "admin",
+        "penghuni"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,0 +1,142 @@
+
+> kos-pondok-muslimah@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.85.95.112:3000
+- Environments: .env
+✓ Ready in 2.9s
+✓ Running next.config.ts took 428ms
+- Experiments (use with caution):
+  · serverActions
+
+ GET / 307 in 2.0s (next.js: 827ms, proxy.ts: 58ms, application-code: 1152ms)
+ GET /penghuni 200 in 19.4s (next.js: 3.0s, proxy.ts: 7.6s, application-code: 8.8s)
+ GET /daftar 200 in 1311ms (next.js: 380ms, proxy.ts: 65ms, application-code: 865ms)
+ GET /api/cron/generate-tagihan 403 in 1077ms (next.js: 615ms, application-code: 463ms)
+ GET /dashboard 200 in 10.2s (next.js: 168ms, proxy.ts: 177ms, application-code: 9.9s)
+ GET /api/cron/generate-tagihan 403 in 40ms (next.js: 11ms, application-code: 29ms)
+ POST /api/payment/midtrans/notification 400 in 385ms (next.js: 307ms, application-code: 78ms)
+ GET /penghuni 200 in 1010ms (next.js: 21ms, proxy.ts: 43ms, application-code: 947ms)
+ GET /kamar 200 in 1042ms (next.js: 148ms, proxy.ts: 47ms, application-code: 847ms)
+ GET /dashboard 200 in 8.2s (next.js: 15ms, proxy.ts: 45ms, application-code: 8.1s)
+ GET /kamar 200 in 762ms (next.js: 17ms, proxy.ts: 40ms, application-code: 705ms)
+ GET /kamar/8e7d7248-c53a-4e37-9923-2fe3a7284ce0/edit 200 in 3.5s (next.js: 2.1s, proxy.ts: 47ms, application-code: 1308ms)
+ GET /kamar 200 in 928ms (next.js: 18ms, proxy.ts: 45ms, application-code: 865ms)
+ POST /kamar/8e7d7248-c53a-4e37-9923-2fe3a7284ce0/edit 200 in 3.3s (next.js: 60ms, proxy.ts: 52ms, application-code: 3.2s)
+  └─ ƒ simpanKamar(undefined, {}) in 2178ms src/app/(panel)/kamar/actions.ts
+ POST /kamar 200 in 2.2s (next.js: 27ms, proxy.ts: 68ms, application-code: 2.2s)
+  └─ ƒ hapusKamar({}) in 1071ms src/app/(panel)/kamar/actions.ts
+ POST /kamar 200 in 2.0s (next.js: 32ms, proxy.ts: 121ms, application-code: 1896ms)
+  └─ ƒ hapusKamar({}) in 1072ms src/app/(panel)/kamar/actions.ts
+ POST /kamar 200 in 1952ms (next.js: 21ms, proxy.ts: 68ms, application-code: 1864ms)
+  └─ ƒ hapusKamar({}) in 1068ms src/app/(panel)/kamar/actions.ts
+ POST /kamar 200 in 2.3s (next.js: 22ms, proxy.ts: 96ms, application-code: 2.2s)
+  └─ ƒ hapusKamar({}) in 1568ms src/app/(panel)/kamar/actions.ts
+ GET /penghuni 200 in 885ms (next.js: 18ms, proxy.ts: 41ms, application-code: 825ms)
+ GET /pembayaran 200 in 7.8s (next.js: 168ms, proxy.ts: 41ms, application-code: 7.6s)
+ GET /pembayaran 200 in 5.3s (next.js: 18ms, proxy.ts: 36ms, application-code: 5.2s)
+ POST /pembayaran 200 in 8.0s (next.js: 13ms, proxy.ts: 46ms, application-code: 8.0s)
+  └─ ƒ verifikasiPembayaran({}) in 4296ms src/app/(panel)/pembayaran/actions.ts
+ GET /pembayaran/b2dea4b4-9035-4a32-af55-2e04cc41766e/edit 200 in 6.9s (next.js: 5.9s, proxy.ts: 41ms, application-code: 975ms)
+ POST /pembayaran/b2dea4b4-9035-4a32-af55-2e04cc41766e/edit 200 in 168ms (next.js: 76ms, proxy.ts: 40ms, application-code: 53ms)
+  └─ ƒ simpanPembayaran(undefined, {}) in 23ms src/app/(panel)/pembayaran/actions.ts
+ POST /pembayaran/b2dea4b4-9035-4a32-af55-2e04cc41766e/edit 200 in 138ms (next.js: 54ms, proxy.ts: 42ms, application-code: 42ms)
+  └─ ƒ simpanPembayaran({"error":"Pilih penghuni terlebih dahulu."}, {}) in 23ms src/app/(panel)/pembayaran/actions.ts
+ POST /pembayaran/b2dea4b4-9035-4a32-af55-2e04cc41766e/edit 200 in 133ms (next.js: 59ms, proxy.ts: 28ms, application-code: 46ms)
+  └─ ƒ simpanPembayaran({"error":"Pilih penghuni terlebih dahulu."}, {}) in 19ms src/app/(panel)/pembayaran/actions.ts
+ POST /pembayaran/b2dea4b4-9035-4a32-af55-2e04cc41766e/edit 200 in 172ms (next.js: 63ms, proxy.ts: 48ms, application-code: 60ms)
+  └─ ƒ simpanPembayaran({"error":"Pilih penghuni terlebih dahulu."}, {}) in 29ms src/app/(panel)/pembayaran/actions.ts
+ GET /login 200 in 360ms (next.js: 192ms, proxy.ts: 21ms, application-code: 147ms)
+ POST /pembayaran 200 in 547ms (next.js: 34ms, proxy.ts: 44ms, application-code: 470ms)
+  └─ ƒ logout() in 35ms src/app/(panel)/actions.ts
+ GET / 200 in 434ms (next.js: 20ms, proxy.ts: 30ms, application-code: 384ms)
+ POST /login 200 in 1235ms (next.js: 10ms, proxy.ts: 19ms, application-code: 1206ms)
+  └─ ƒ authenticate(undefined, {}) in 711ms src/app/login/actions.ts
+ GET /portal 200 in 2.2s (next.js: 325ms, proxy.ts: 44ms, application-code: 1809ms)
+ GET /portal 200 in 2.4s (next.js: 31ms, proxy.ts: 174ms, application-code: 2.2s)
+ GET /portal/notifikasi 200 in 2.0s (next.js: 170ms, proxy.ts: 46ms, application-code: 1826ms)
+ GET /portal/riwayat 200 in 5.4s (next.js: 3.0s, proxy.ts: 49ms, application-code: 2.3s)
+○ Compiling /portal/bayar ...
+ GET /portal/bayar 200 in 8.0s (next.js: 4.1s, proxy.ts: 54ms, application-code: 3.9s)
+[browser] Cannot specify a encType or method for a form that specifies a function as the action. React provides those automatically. They will get overridden. 
+ GET /portal 200 in 1701ms (next.js: 106ms, proxy.ts: 44ms, application-code: 1551ms)
+ GET /portal/bayar 200 in 2.3s (next.js: 92ms, proxy.ts: 30ms, application-code: 2.2s)
+ GET /login 200 in 96ms (next.js: 40ms, proxy.ts: 7ms, application-code: 49ms)
+ POST /portal/bayar 200 in 200ms (next.js: 13ms, proxy.ts: 26ms, application-code: 162ms)
+  └─ ƒ logoutPortal() in 30ms src/app/portal/actions.ts
+ GET / 200 in 490ms (next.js: 404ms, proxy.ts: 14ms, application-code: 73ms)
+ POST /login 200 in 4.9s (next.js: 15ms, proxy.ts: 34ms, application-code: 4.8s)
+  └─ ƒ authenticate(undefined, {}) in 4208ms src/app/login/actions.ts
+ GET /dashboard 200 in 4.4s (next.js: 51ms, proxy.ts: 45ms, application-code: 4.3s)
+ GET /dashboard 200 in 4.2s (next.js: 7ms, proxy.ts: 50ms, application-code: 4.2s)
+ GET /kamar 200 in 328ms (next.js: 33ms, proxy.ts: 14ms, application-code: 282ms)
+ GET /kamar/tambah 200 in 172ms (next.js: 74ms, proxy.ts: 17ms, application-code: 81ms)
+ GET /penghuni 200 in 2.9s (next.js: 11ms, proxy.ts: 15ms, application-code: 2.9s)
+ GET /pembayaran 200 in 2.9s (next.js: 30ms, proxy.ts: 15ms, application-code: 2.8s)
+ GET /penghuni 200 in 405ms (next.js: 7ms, proxy.ts: 17ms, application-code: 381ms)
+ GET /penghuni/tambah 200 in 1366ms (next.js: 435ms, proxy.ts: 17ms, application-code: 914ms)
+ GET /penghuni 200 in 126ms (next.js: 28ms, proxy.ts: 53ms, application-code: 46ms)
+ GET /penghuni 200 in 400ms (next.js: 27ms, proxy.ts: 42ms, application-code: 331ms)
+ GET / 307 in 311ms (next.js: 15ms, proxy.ts: 57ms, application-code: 239ms)
+ GET /dashboard 200 in 7.4s (next.js: 9ms, proxy.ts: 27ms, application-code: 7.3s)
+ GET /login 200 in 177ms (next.js: 18ms, proxy.ts: 22ms, application-code: 136ms)
+ POST /dashboard 200 in 346ms (next.js: 19ms, proxy.ts: 50ms, application-code: 278ms)
+  └─ ƒ logout() in 28ms src/app/(panel)/actions.ts
+ GET / 200 in 260ms (next.js: 15ms, proxy.ts: 43ms, application-code: 201ms)
+ POST /login 200 in 1385ms (next.js: 15ms, proxy.ts: 26ms, application-code: 1344ms)
+  └─ ƒ authenticate(undefined, {}) in 1042ms src/app/login/actions.ts
+ GET /portal 200 in 1793ms (next.js: 22ms, proxy.ts: 43ms, application-code: 1728ms)
+ GET /portal 200 in 1746ms (next.js: 15ms, proxy.ts: 109ms, application-code: 1622ms)
+ GET /portal/bayar 200 in 3.2s (next.js: 20ms, proxy.ts: 38ms, application-code: 3.2s)
+[browser] Cannot specify a encType or method for a form that specifies a function as the action. React provides those automatically. They will get overridden. 
+✓ Compiled in 4.2s
+ GET /portal 307 in 44ms (proxy.ts: 27ms)
+ GET /portal 200 in 1470ms (next.js: 8ms, proxy.ts: 27ms, application-code: 1434ms)
+ GET /portal/bayar 200 in 2.5s (next.js: 30ms, proxy.ts: 22ms, application-code: 2.5s)
+ GET /portal/bayar 200 in 2.8s (next.js: 29ms, proxy.ts: 28ms, application-code: 2.7s)
+ GET /portal 200 in 2.3s (next.js: 22ms, proxy.ts: 17ms, application-code: 2.2s)
+ GET / 307 in 258ms (next.js: 37ms, proxy.ts: 54ms, application-code: 167ms)
+ GET /portal 200 in 3.3s (next.js: 17ms, proxy.ts: 23ms, application-code: 3.2s)
+ GET /portal/bayar 200 in 5.9s (next.js: 388ms, proxy.ts: 35ms, application-code: 5.5s)
+ GET /portal/notifikasi 200 in 2.3s (next.js: 99ms, proxy.ts: 40ms, application-code: 2.2s)
+ GET /portal/bayar 200 in 4.4s (next.js: 17ms, proxy.ts: 39ms, application-code: 4.4s)
+  Reload env: .env
+ GET / 307 in 1878ms (next.js: 340ms, proxy.ts: 960ms, application-code: 578ms)
+⨯ Error: Failed query: select "id", "email", "id_penghuni" from "users" where "users"."id" = $1 limit $2
+params: 06e9ae41-d57d-4ecf-8bbf-741a4d78a034,1
+    at async getPortalData (src\lib\portal.ts:36:18)
+    at async PortalLayout (src\app\portal\layout.tsx:27:16)
+  34 |   if (session.user.role !== "penghuni") redirect("/dashboard");
+  35 |
+> 36 |   const [akun] = await db
+     |                  ^
+  37 |     .select({ id: users.id, email: users.email, idPenghuni: users.idPenghuni })
+  38 |     .from(users)
+  39 |     .where(eq(users.id, session.user.id)) {
+  query: 'select "id", "email", "id_penghuni" from "users" where "users"."id" = $1 limit $2',
+  params: [ '06e9ae41-d57d-4ecf-8bbf-741a4d78a034', 1 ],
+  digest: '2700595915',
+  [cause]: Error: write CONNECT_TIMEOUT aws-0-ap-south-1.pooler.supabase.com:6543
+      at <unknown> (Error: write CONNECT_TIMEOUT aws-0-ap-south-1.pooler.supabase.com:6543) {
+    code: 'CONNECT_TIMEOUT',
+    errno: 'CONNECT_TIMEOUT',
+    address: 'aws-0-ap-south-1.pooler.supabase.com',
+    port: 6543
+  }
+}
+ GET /portal 500 in 31.1s (next.js: 261ms, proxy.ts: 23ms, application-code: 30.8s)
+[browser] Uncaught Error: Failed query: select "id", "email", "id_penghuni" from "users" where "users"."id" = $1 limit $2
+params: 06e9ae41-d57d-4ecf-8bbf-741a4d78a034,1
+    at  getPortalData (src\lib\portal.ts:36:18)
+    at  PortalLayout (src\app\portal\layout.tsx:27:16)
+  34 |   if (session.user.role !== "penghuni") redirect("/dashboard");
+  35 |
+> 36 |   const [akun] = await db
+     |                  ^
+  37 |     .select({ id: users.id, email: users.email, idPenghuni: users.idPenghuni })
+  38 |     .from(users)
+  39 |     .where(eq(users.id, session.user.id))
+  Reload env: .env
+ GET /portal 200 in 4.5s (next.js: 332ms, proxy.ts: 445ms, application-code: 3.7s)
