@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { db } from "@/db";
 import { kamar, penghuni, users } from "@/db/schema";
 import { sinkronPembayaranAwal } from "./bayar-awal";
+import { berandaPeran } from "./role";
 
 /**
  * Konteks portal penghuni (/portal*).
@@ -31,7 +32,7 @@ export type PortalData = {
 export async function getPortalData(): Promise<PortalData | null> {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "penghuni") redirect("/dashboard");
+  if (session.user.role !== "penghuni") redirect(berandaPeran(session.user.role));
 
   const [akun] = await db
     .select({ id: users.id, email: users.email, idPenghuni: users.idPenghuni })

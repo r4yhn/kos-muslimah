@@ -1,11 +1,9 @@
-import { Bell, LockKeyhole } from "lucide-react";
-import Link from "next/link";
+import { LockKeyhole } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
+import { ConfirmForm } from "@/components/confirm-form";
 import { PortalNav } from "@/components/portal-nav";
-import { PortalNotifPoll } from "@/components/portal-notif-poll";
-import { btnSecondaryClass } from "@/lib/ui";
-import { hitungNotifikasiBelumDibaca } from "@/lib/notifikasi";
+import { btnSecondaryClass, eyebrowClass } from "@/lib/ui";
 import { getPortalData } from "@/lib/portal";
 import { logoutPortal } from "./actions";
 
@@ -19,6 +17,11 @@ export const dynamic = "force-dynamic";
  * - Saat penghuni baru masih wajib "Pembayaran Awal", menu lain dikunci:
  *   hanya link Pembayaran Awal yang tampil + banner peringatan.
  *   (Pengalihan halaman tetap diperkuat di masing-masing halaman.)
+ * - Mantan penghuni (status "Keluar" — datanya sudah dipindahkan ke arsip kos
+ *   oleh fitur "Arsip Otomatis & Pengosongan Kamar") tidak lagi memakai portal:
+ *   yang tampil hanya keterangan bahwa akunnya sudah tidak aktif beserta tombol
+ *   keluar. Pengarsipan **tidak diberitahukan** ke penghuni dan tidak ada
+ *   informasi arsip/jatuh tempo apa pun pada navbar portal.
  */
 export default async function PortalLayout({
   children,
@@ -49,15 +52,37 @@ export default async function PortalLayout({
     );
   }
 
-  const { nama, email, userId, terkunci } = data;
+  // ====== Mantan penghuni: akun portalnya sudah tidak aktif ======
+  // Tidak ada informasi apa pun soal pengarsipan (penghuni tidak perlu tahu).
+  if (data.status === "Keluar") {
+    return (
+      <main className="flex min-h-full flex-1 items-center justify-center px-4 py-12">
+        <div className="w-full max-w-md rounded-xl border border-primary/20 bg-surface p-8 text-center shadow-elevated">
+          <BrandMark size="md" className="mx-auto" />
+          <p className={`${eyebrowClass} mt-6`}>Portal Penghuni</p>
+          <h1 className="mt-2 font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl">
+            Akun Portal Sudah Tidak Aktif
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-white/60">
+            Akun ini tidak lagi terhubung dengan kamar kos mana pun. Silakan
+            hubungi pengelola kos bila Anda ingin kembali menghuni atau
+            membutuhkan bantuan atas akun Anda.
+          </p>
 
-  const belumDibaca = await hitungNotifikasiBelumDibaca(userId);
+          <form action={logoutPortal} className="mt-6">
+            <button type="submit" className={btnSecondaryClass}>
+              Keluar
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
+  const { nama, email, terkunci } = data;
 
   return (
     <div className="relative flex min-h-full flex-1 flex-col">
-      {/* Penyegar notifikasi "real-time" (badge lonceng & daftar notifikasi). */}
-      <PortalNotifPoll belumDibaca={belumDibaca} />
-
       {/* ====== Header / Navigasi ====== */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-background/85 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2.5 px-4 py-3 sm:px-6">
@@ -83,26 +108,17 @@ export default async function PortalLayout({
                   {email}
                 </p>
               </div>
-              <Link
-                href="/portal/notifikasi"
-                aria-label={`Notifikasi${belumDibaca > 0 ? ` — ${belumDibaca} belum dibaca` : ""}`}
-                className="relative inline-flex min-h-[44px] w-[44px] items-center justify-center rounded-md border border-primary/30 text-white/80 transition-all duration-[100ms] ease-brand hover:border-primary hover:bg-primary/10 hover:text-primary active:translate-y-px"
+              <ConfirmForm
+                action={logoutPortal}
+                confirmMessage="Keluar dari portal penghuni?"
               >
-                <Bell className="size-4" aria-hidden />
-                {belumDibaca > 0 ? (
-                  <span className="absolute -right-1.5 -top-1.5 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-tight text-white shadow-card">
-                    {belumDibaca}
-                  </span>
-                ) : null}
-              </Link>
-              <form action={logoutPortal}>
                 <button
                   type="submit"
                   className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-primary/30 px-4 font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-white/80 transition-all duration-[100ms] ease-brand hover:border-primary hover:bg-primary/10 hover:text-primary active:translate-y-px"
                 >
                   Keluar
                 </button>
-              </form>
+              </ConfirmForm>
             </div>
           </div>
 

@@ -12,8 +12,9 @@ import { hariIniUtc, sudahTerlambat } from "./tagihan";
  * Sumber tunggal: tabel `pembayaran` — satu baris = satu periode sewa seorang
  * penghuni. Arti statusnya bagi laporan:
  * - `Lunas`               -> pendapatan yang benar-benar diterima (kas masuk);
- * - `Menunggu Konfirmasi` -> bukti sudah dikirim penghuni, menanti verifikasi
- *                           admin sehingga **belum** diakui sebagai pendapatan;
+ * - `Menunggu Konfirmasi` -> bukti sudah dikirim penghuni (data lama/legacy),
+ *                           menanti verifikasi admin sehingga **belum** diakui
+ *                           sebagai pendapatan;
  * - `Belum Lunas`         -> tagihan otomatis/manual yang masih menjadi piutang.
  *
  * Semua angka mengikuti rentang bulan (`dari`–`sampai`) pada satu tahun yang

@@ -1,7 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -9,15 +7,16 @@ import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { db } from "@/db";
 import { kamar, pembayaran, penghuni, users } from "@/db/schema";
+import { arsipkanPenghuni } from "@/lib/arsip";
 import {
   daftarPeriodeAwal,
   PAKET_BAYAR_AWAL,
+  sinkronPembayaranAwal,
   type PaketBayarAwal,
 } from "@/lib/bayar-awal";
 import { bacaBuktiDariForm } from "@/lib/bukti";
 import { formatIDR, namaBulan, parseTanggal } from "@/lib/format";
 import {
-  hitungNotifikasiBelumDibaca,
   kirimNotifikasi,
   kirimNotifikasiKeRole,
   tandaiSemuaNotifikasiDibaca,
@@ -32,22 +31,68 @@ const METODE_VALID = [
   "E-Wallet",
 ] as const;
 
-/** Logout dari portal penghuni. */
+/**
+ * Logout dari portal penghuni — data penghuni otomatis dipindahkan ke arsip.
+ *
+ * Dipakai tombol *Keluar* pada layout portal. Karena pengarsipan kini menjadi
+ * satu-satunya mekanisme keluar dari sisi penghuni (tanpa kartu *Keluar dari
+ * Kos* terpisah), tidak ada pemberitahuan apa pun ke penghuni.
+ */
 export async function logoutPortal() {
+  await arsipkanPenghuniPadaLogout();
   await signOut({ redirectTo: "/login" });
+}
+
+/**
+ * Fitur **Arsip Otomatis & Pengosongan Kamar**: saat penghuni keluar (*logout*)
+ * dari portal, datanya **tidak dihapus permanen** — seluruh identitas, kamar
+ * yang ditinggalkan, dan salinan riwayat pembayarannya dipindahkan otomatis ke
+ * tabel `arsip_penghuni` (menu **Arsip** pada panel pengelola), lalu kamar
+ * dikembalikan menjadi "Tersedia". Dipakai oleh `logoutPortal`.
+ */
+async function arsipkanPenghuniPadaLogout(): Promise<void> {
+  const idPenghuni = await idPenghuniDariSesi();
+  if (!idPenghuni) return;
+
+  const hasil = await arsipkanPenghuni(
+    idPenghuni,
+    "Proses Keluar",
+    "Penghuni keluar (logout) dari portal penghuni."
+  );
+  if (!hasil) return;
+
+  revalidatePath("/arsip");
+  revalidatePath("/penghuni");
+  revalidatePath("/kamar");
+  revalidatePath("/dashboard");
+}
+
+/** Id data penghuni yang tertaut ke sesi portal yang sedang aktif. */
+async function idPenghuniDariSesi(): Promise<string | null> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "penghuni") return null;
+
+  const [akun] = await db
+    .select({ idPenghuni: users.idPenghuni })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  return akun?.idPenghuni ?? null;
 }
 
 /**
  * Proses "Pembayaran Awal" (bayar online via web) dari halaman /portal/bayar-awal.
  *
- * Alur (fitur 1B — Menunggu Konfirmasi):
+ * Alur (pembayaran otomatis Lunas):
  * - hanya akun penghuni yang masih `perlu_bayar_awal` yang boleh mengirim;
  * - penghuni memilih paket 1, 2, atau 6 bulan + metode online + tanggal &
  *   melampirkan **bukti bayar**;
- * - sistem mencatat setiap bulan pada paket berstatus "Menunggu Konfirmasi"
- *   (satu `kelompok_konfirmasi` untuk seluruh bulan);
- * - kunci portal tetap terkunci & kamar belum "Terisi" sampai admin
- *   memverifikasi bukti → Lunas (lihat `verifikasiPembayaran`).
+ * - seluruh bulan pada paket **langsung dicatat Lunas** (bukti disimpan sebagai
+ *   lampiran audit, bukan antrean verifikasi) sehingga tidak ada lagi status
+ *   "Menunggu Konfirmasi" untuk pembayaran baru;
+ * - kunci portal otomatis dibuka, kamar resmi "Terisi", dan notifikasi dikirim
+ *   ke penghuni & seluruh admin.
  */
 export async function simpanPembayaranAwal(
   _prevState: BayarAwalState,
@@ -120,10 +165,9 @@ export async function simpanPembayaranAwal(
   if (!bukti.ok) return { error: bukti.error };
 
   const periodeList = daftarPeriodeAwal(baris.tglMasuk, paket);
-  const kelompok = randomUUID();
 
   // Pastikan tidak ada bulan yang sudah Lunas / sedang menunggu (hindari
-  // pengajuan ganda) sebelum menulis apa pun.
+  // pembayaran ganda) sebelum menulis apa pun.
   for (const { bulan, tahun } of periodeList) {
     const [catatan] = await db
       .select({ statusBayar: pembayaran.statusBayar })
@@ -141,12 +185,13 @@ export async function simpanPembayaranAwal(
       catatan?.statusBayar === "Menunggu Konfirmasi"
     ) {
       return {
-        error: `Periode ${namaBulan(bulan)} ${tahun} sudah dibayar atau sedang menunggu konfirmasi.`,
+        error: `Periode ${namaBulan(bulan)} ${tahun} sudah dibayar.`,
       };
     }
   }
 
-  // Simpan pengajuan "Menunggu Konfirmasi" untuk setiap bulan pada paket.
+  // Catat LUNAS langsung untuk setiap bulan pada paket; bukti tetap disimpan
+  // sebagai lampiran agar pengelola dapat mengauditnya di panel Pembayaran.
   let totalBayar = 0;
   await db.transaction(async (tx) => {
     for (const { bulan, tahun } of periodeList) {
@@ -171,9 +216,9 @@ export async function simpanPembayaranAwal(
             jumlahBayar: room.hargaSewa,
             metodeBayar,
             keterangan: keteranganBulan,
-            statusBayar: "Menunggu Konfirmasi",
+            statusBayar: "Lunas",
             buktiPembayaran: bukti.dataUrl,
-            kelompokKonfirmasi: kelompok,
+            kelompokKonfirmasi: null,
           })
           .where(eq(pembayaran.id, catatan.id));
       } else {
@@ -185,16 +230,18 @@ export async function simpanPembayaranAwal(
           jumlahBayar: room.hargaSewa,
           metodeBayar,
           keterangan: keteranganBulan,
-          statusBayar: "Menunggu Konfirmasi",
+          statusBayar: "Lunas",
           buktiPembayaran: bukti.dataUrl,
-          kelompokKonfirmasi: kelompok,
+          kelompokKonfirmasi: null,
         });
       }
       totalBayar += room.hargaSewa;
     }
   });
 
-  // Kunci portal TIDAK dibuka di sini — menunggu verifikasi admin.
+  // Status sudah Lunas → buka kunci portal & aktifkan kamar secara otomatis.
+  await sinkronPembayaranAwal(baris.id);
+
   // Notifikasi otomatis untuk penghuni & admin.
   const awalPeriode = periodeList[0];
   const akhirPeriode = periodeList[periodeList.length - 1];
@@ -205,13 +252,13 @@ export async function simpanPembayaranAwal(
 
   await kirimNotifikasi(
     session.user.id,
-    "Bukti Pembayaran Awal Diterima ⏳",
-    `Pembayaran awal paket ${paket} bulan (${labelCakupan}) sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar} telah kami terima. Bukti sedang diverifikasi pengelola — status kamar & menu portal aktif setelah dikonfirmasi.`
+    "Pembayaran Awal Lunas ✅",
+    `Pembayaran awal paket ${paket} bulan (${labelCakupan}) sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar} langsung tercatat LUNAS. Status kamar Anda resmi aktif dan seluruh menu portal sudah terbuka. Terima kasih!`
   );
   await kirimNotifikasiKeRole(
     "admin",
-    "Pembayaran Awal Menunggu Verifikasi",
-    `${baris.nama} (Kamar ${room.noKamar}) mengirim pembayaran awal paket ${paket} bulan sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar}. Silakan verifikasi bukti di halaman Pembayaran.`
+    "Pembayaran Awal Lunas",
+    `${baris.nama} (Kamar ${room.noKamar}) melunasi pembayaran awal paket ${paket} bulan (${labelCakupan}) sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar}. Status otomatis menjadi Lunas & kamar resmi Terisi — bukti bayar tersimpan di halaman Pembayaran.`
   );
 
   revalidatePath("/portal");
@@ -222,22 +269,18 @@ export async function simpanPembayaranAwal(
   revalidatePath("/kamar");
   revalidatePath("/penghuni");
   revalidatePath("/pembayaran");
+  revalidatePath("/laporan");
 
-  redirect("/portal/bayar-awal?menunggu=1");
+  redirect(`/portal?selesai=1&paket=${paket}`);
 }
 
-/** Tandai seluruh notifikasi portal akun yang sedang login sebagai dibaca. */
+/**
+ * Tandai seluruh notifikasi portal akun yang sedang login sebagai dibaca.
+ */
 export async function tandaiSemuaNotifikasiDibacaPortal(): Promise<void> {
   const session = await auth();
   if (!session?.user) return;
 
   await tandaiSemuaNotifikasiDibaca(session.user.id);
   revalidatePath("/portal/notifikasi");
-}
-
-/** Jumlah notifikasi belum dibaca akun portal yang sedang login. */
-export async function jumlahNotifikasiPortalBelumDibaca(): Promise<number> {
-  const session = await auth();
-  if (!session?.user) return 0;
-  return hitungNotifikasiBelumDibaca(session.user.id);
 }

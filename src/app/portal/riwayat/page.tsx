@@ -7,7 +7,7 @@ import { BayarBadge } from "@/components/badges";
 import { db } from "@/db";
 import { pembayaran } from "@/db/schema";
 import { formatIDR, formatTanggal, namaBulan } from "@/lib/format";
-import { cardClass, cellClass, eyebrowClass, headingClass, tableHeadClass } from "@/lib/ui";
+import { cellClass, eyebrowClass, headingClass, tableHeadClass } from "@/lib/ui";
 import { getPortalData } from "@/lib/portal";
 
 export const dynamic = "force-dynamic";

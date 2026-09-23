@@ -2,6 +2,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { notifikasi, users } from "@/db/schema";
+import type { UserRole } from "@/types/next-auth";
 
 /**
  * Helper notifikasi dalam aplikasi (portal penghuni & panel admin).
@@ -22,7 +23,7 @@ export async function kirimNotifikasi(
 
 /** Kirim notifikasi ke seluruh akun ber-role tertentu (mis. semua admin). */
 export async function kirimNotifikasiKeRole(
-  role: "admin" | "penghuni",
+  role: UserRole,
   judul: string,
   pesan: string
 ): Promise<void> {
@@ -36,6 +37,27 @@ export async function kirimNotifikasiKeRole(
   await db.insert(notifikasi).values(
     penerima.map((p) => ({ idUser: p.id, judul, pesan }))
   );
+}
+
+/**
+ * Kirim notifikasi ke akun portal milik satu data penghuni (bila akunnya ada).
+ * Dipakai saat status pembayaran berubah menjadi Lunas — termasuk ketika admin
+ * mencatat pembayaran atas nama penghuni.
+ */
+export async function kirimNotifikasiKePenghuni(
+  idPenghuni: string,
+  judul: string,
+  pesan: string
+): Promise<void> {
+  const [akun] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.idPenghuni, idPenghuni))
+    .limit(1);
+
+  if (!akun) return;
+
+  await db.insert(notifikasi).values({ idUser: akun.id, judul, pesan });
 }
 
 /** Jumlah notifikasi belum dibaca milik satu akun. */

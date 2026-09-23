@@ -175,8 +175,9 @@ export function BayarBulananForm({
         </div>
         <span className={helpClass}>
           Lampirkan foto bukti transfer / QRIS (JPG, PNG, WebP, atau HEIC;
-          maksimal 2 MB). Pengelola memverifikasi bukti sebelum tagihan
-          berstatus Lunas.
+          maksimal 2 MB). Tagihan yang Anda bayar langsung berstatus{" "}
+          <strong className="text-white/70">Lunas</strong> setelah form dikirim —
+          bukti tetap tersimpan untuk pemeriksaan pengelola.
         </span>
       </label>
 

@@ -1,0 +1,10 @@
+RUNNING  
+[1] bulan menunggak (belum dibayar): 8
+[2] sinkronkanArsipPenghuni (harus tidak mengeluarkan) -> backfill: 0 | penghuni: {"status":"Aktif","idKamar":"1a837e6a-560e-436f-a7bb-2cd3ff2b5264"} | kamar: Terisi
+[3] arsip dibuat: Proses Keluar
+[3] penghuni setelah logout -> {"status":"Keluar","idKamar":null} | kamar -> Tersedia
+[3] isi arsip -> {"nama":"ZZ UJI LOGOUT ARSIP A","noKamar":"ZZ-UJI-LO","alasan":"Proses Keluar","catatan":"Penghuni keluar (logout) dari portal penghuni.","catatanPembayaran":1,"totalLunas":"Rp 500.000","riwayat":1}
+[4] data asli tetap ada (tidak dihapus permanen) — baris pembayaran: 1
+[5] info menu Bayar Sewa -> jadwal tiap tanggal 5 | tagihan berikutnya Februari 2026 — jatuh tempo 05 Februari 2026
+CLEANUP selesai — data uji dihapus.
+DONE 

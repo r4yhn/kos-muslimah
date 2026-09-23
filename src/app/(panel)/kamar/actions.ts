@@ -15,7 +15,9 @@ type StatusKamar = (typeof STATUS_VALID)[number];
 
 async function isAutentik(): Promise<boolean> {
   const session = await auth();
-  return Boolean(session?.user);
+  // Hanya pengelola (role "admin") yang boleh menambah/mengubah/menghapus data
+  // master. Role "pemilik" bersifat read-only di /monitoring.
+  return session?.user?.role === "admin";
 }
 
 /**

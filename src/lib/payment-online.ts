@@ -149,6 +149,7 @@ export async function terapkanSettlementTransaksi(
   revalidatePath("/kamar");
   revalidatePath("/penghuni");
   revalidatePath("/pembayaran");
+  revalidatePath("/laporan");
 
   return "applied";
 }

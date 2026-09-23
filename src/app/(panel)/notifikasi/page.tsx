@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { btnSecondaryClass, cardClass, cellClass, eyebrowClass, headingClass } from "@/lib/ui";
 import { daftarNotifikasi } from "@/lib/notifikasi";
+import { berandaPeran } from "@/lib/role";
 import { tandaiSemuaNotifikasiDibacaPanel } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ const formatWaktu = new Intl.DateTimeFormat("id-ID", {
 export default async function PanelNotifikasiPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "admin") redirect("/portal");
+  if (session.user.role !== "admin") redirect(berandaPeran(session.user.role));
 
   const daftar = await daftarNotifikasi(session.user.id);
   const belumDibaca = daftar.filter((n) => !n.dibaca).length;

@@ -9,7 +9,7 @@ import { db } from "@/db";
 import { pembayaran, penghuni, users } from "@/db/schema";
 import { parseTanggal, namaBulan, formatIDR } from "@/lib/format";
 import { sinkronPembayaranAwal } from "@/lib/bayar-awal";
-import { kirimNotifikasi } from "@/lib/notifikasi";
+import { kirimNotifikasi, kirimNotifikasiKePenghuni } from "@/lib/notifikasi";
 
 export type PembayaranState = { error?: string } | undefined;
 
@@ -22,7 +22,9 @@ const STATUS_VALID = [
 
 async function isAutentik(): Promise<boolean> {
   const session = await auth();
-  return Boolean(session?.user);
+  // Hanya pengelola (role "admin") yang boleh mencatat/mengubah/menghapus
+  // pembayaran. Role "pemilik" bersifat read-only di /monitoring.
+  return session?.user?.role === "admin";
 }
 
 /** Simpan catatan pembayaran sewa (tambah/ubah). */
@@ -81,13 +83,18 @@ export async function simpanPembayaran(
 
   const statusBayar = statusBayarRaw as (typeof STATUS_VALID)[number];
 
+  // Status sebelum perubahan — dipakai untuk mendeteksi perubahan
+  // "Belum Lunas" → "Lunas" agar penghuni mendapat notifikasi otomatis.
+  let statusSebelumnya: string | null = null;
+
   if (id) {
     const [existing] = await db
-      .select({ id: pembayaran.id })
+      .select({ id: pembayaran.id, statusBayar: pembayaran.statusBayar })
       .from(pembayaran)
       .where(eq(pembayaran.id, id))
       .limit(1);
     if (!existing) return { error: "Catatan pembayaran tidak ditemukan." };
+    statusSebelumnya = existing.statusBayar;
 
     await db
       .update(pembayaran)
@@ -118,6 +125,7 @@ export async function simpanPembayaran(
         )
       )
       .limit(1);
+    statusSebelumnya = sudahAda?.statusBayar ?? null;
 
     if (sudahAda?.statusBayar === "Lunas") {
       return {
@@ -170,7 +178,21 @@ export async function simpanPembayaran(
   // baru, kunci portal otomatis terbuka & kamar resmi menjadi "Terisi".
   await sinkronPembayaranAwal(idPenghuni);
 
+  // Notifikasi otomatis ke penghuni saat tagihan berubah menjadi Lunas
+  // (mis. admin mencatat pembayaran tunai/transfer yang diterima).
+  if (statusBayar === "Lunas" && statusSebelumnya !== "Lunas") {
+    await kirimNotifikasiKePenghuni(
+      idPenghuni,
+      "Pembayaran Lunas ✅",
+      `Pembayaran sewa ${namaBulan(bulan)} ${tahun} sebesar ${formatIDR.format(jumlahBayar)} sudah dicatat pengelola via ${metodeBayar} dan berstatus LUNAS. Terima kasih!`
+    );
+  }
+
   revalidatePath("/pembayaran");
+  revalidatePath("/dashboard");
+  revalidatePath("/laporan");
+  revalidatePath("/portal");
+  revalidatePath("/portal/riwayat");
   redirect("/pembayaran");
 }
 
@@ -273,6 +295,7 @@ export async function verifikasiPembayaran(formData: FormData): Promise<void> {
 
   revalidatePath("/pembayaran");
   revalidatePath("/dashboard");
+  revalidatePath("/laporan");
   revalidatePath("/portal");
   revalidatePath("/portal/bayar");
   revalidatePath("/portal/riwayat");

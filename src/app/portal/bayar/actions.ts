@@ -1,7 +1,5 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -36,14 +34,15 @@ const KUNCI_PERIODE_RE = /^(\d{4})-(\d{2})$/;
  * Proses "Bayar Sewa Bulanan" (bayar online via web) dari halaman
  * /portal/bayar untuk penghuni yang sudah aktif.
  *
- * Aturan (fitur 1B — Menunggu Konfirmasi):
+ * Aturan (pembayaran otomatis Lunas):
  * - hanya akun penghuni berstatus Aktif yang sudah tidak terkunci Pembayaran
  *   Awal dan punya kamar yang boleh mengirim;
  * - tagihan yang bisa diajukan = bulan `tgl_masuk` s.d. bulan berjalan yang
- *   belum Lunas DAN tidak sedang menunggu konfirmasi (daftar dihitung ulang
- *   di server setiap submit);
- * - tiap bulan dicatat "Menunggu Konfirmasi" dalam satu `kelompok_konfirmasi`
- *   lengkap dengan bukti bayar; admin memverifikasi sebelum menjadi Lunas.
+ *   belum Lunas (daftar dihitung ulang di server setiap submit);
+ * - setiap periode yang dipilih **langsung dicatat Lunas** dalam satu
+ *   transaksi, lengkap dengan bukti bayar sebagai lampiran audit (tanpa
+ *   antrean verifikasi pengelola), lalu notifikasi dikirim ke penghuni & admin;
+ * - baris tagihan "Belum Lunas" untuk periode yang sama otomatis ikut dilunasi.
  */
 export async function simpanPembayaranBulanan(
   _prevState: BayarBulananState,
@@ -148,10 +147,9 @@ export async function simpanPembayaranBulanan(
     perKunci.set(raw, { bulan, tahun });
   }
   const periodeList = [...perKunci.values()].sort(bandingkanPeriode);
-  const kelompok = randomUUID();
 
-  // Simpan pengajuan "Menunggu Konfirmasi" per periode secara atomik; setiap
-  // bulan menjadi satu baris (berisi bukti & kelompok yang sama).
+  // Catat LUNAS langsung untuk setiap periode; bukti tetap disimpan sebagai
+  // lampiran agar pengelola dapat mengauditnya di panel Pembayaran.
   let totalBayar = 0;
   await db.transaction(async (tx) => {
     for (const { bulan, tahun } of periodeList) {
@@ -176,9 +174,9 @@ export async function simpanPembayaranBulanan(
             jumlahBayar: room.hargaSewa,
             metodeBayar,
             keterangan: keteranganBulan,
-            statusBayar: "Menunggu Konfirmasi",
+            statusBayar: "Lunas",
             buktiPembayaran: bukti.dataUrl,
-            kelompokKonfirmasi: kelompok,
+            kelompokKonfirmasi: null,
           })
           .where(eq(pembayaran.id, catatan.id));
       } else {
@@ -190,16 +188,16 @@ export async function simpanPembayaranBulanan(
           jumlahBayar: room.hargaSewa,
           metodeBayar,
           keterangan: keteranganBulan,
-          statusBayar: "Menunggu Konfirmasi",
+          statusBayar: "Lunas",
           buktiPembayaran: bukti.dataUrl,
-          kelompokKonfirmasi: kelompok,
+          kelompokKonfirmasi: null,
         });
       }
       totalBayar += room.hargaSewa;
     }
   });
 
-  // Notifikasi otomatis untuk penghuni & admin (menunggu verifikasi).
+  // Notifikasi otomatis untuk penghuni & admin (status sudah Lunas).
   const awalPeriode = periodeList[0];
   const akhirPeriode = periodeList[periodeList.length - 1];
   const labelCakupan =
@@ -209,13 +207,13 @@ export async function simpanPembayaranBulanan(
 
   await kirimNotifikasi(
     session.user.id,
-    "Bukti Pembayaran Bulanan Diterima ⏳",
-    `Pembayaran sewa ${labelCakupan} sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar} telah kami terima. Bukti sedang diverifikasi pengelola — tagihan berstatus Lunas setelah dikonfirmasi.`
+    "Pembayaran Bulanan Lunas ✅",
+    `Pembayaran sewa ${labelCakupan} sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar} langsung tercatat LUNAS. Status tagihan Anda otomatis diperbarui — terima kasih!`
   );
   await kirimNotifikasiKeRole(
     "admin",
-    "Pembayaran Bulanan Menunggu Verifikasi",
-    `${penghuniRow.nama} (Kamar ${room.noKamar}) mengirim pembayaran sewa ${labelCakupan} sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar}. Silakan verifikasi bukti di halaman Pembayaran.`
+    "Pembayaran Bulanan Lunas",
+    `${penghuniRow.nama} (Kamar ${room.noKamar}) melunasi sewa ${labelCakupan} sebesar ${formatIDR.format(totalBayar)} via ${metodeBayar}. Status otomatis menjadi Lunas & bukti bayar tersimpan di halaman Pembayaran.`
   );
 
   revalidatePath("/portal");
@@ -226,8 +224,9 @@ export async function simpanPembayaranBulanan(
   revalidatePath("/kamar");
   revalidatePath("/penghuni");
   revalidatePath("/pembayaran");
+  revalidatePath("/laporan");
 
-  redirect("/portal/bayar?menunggu=1");
+  redirect("/portal/bayar?lunas=1");
 }
 
 /**

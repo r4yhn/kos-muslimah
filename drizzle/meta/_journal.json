@@ -43,6 +43,20 @@
       "when": 1788838275894,
       "tag": "0005_stale_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790094138465,
+      "tag": "0006_smooth_chamber",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790153031764,
+      "tag": "0007_fearless_electro",
+      "breakpoints": true
     }
   ]
 }

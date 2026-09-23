@@ -13,7 +13,7 @@ export async function logout() {
 /** Tandai seluruh notifikasi admin yang sedang login sebagai sudah dibaca. */
 export async function tandaiSemuaNotifikasiDibacaPanel(): Promise<void> {
   const session = await auth();
-  if (!session?.user) return;
+  if (session?.user?.role !== "admin") return;
 
   await tandaiSemuaNotifikasiDibaca(session.user.id);
   revalidatePath("/notifikasi");

@@ -29,8 +29,9 @@ export default async function EditPenghuniPage({
     .limit(1);
   if (!baris) notFound();
 
-  // Opsi kamar: kamar berstatus Tersedia & tidak sedang dipesan penghuni
-  // lain yang menunggu pembayaran awal; kamar miliknya sendiri tetap muncul.
+  // Opsi kamar: kamar yang masih punya slot (maks. 2 penghuni/kamar) dan tidak
+  // berstatus Perbaikan; kamar milik penghuni ini tetap muncul (slotnya sendiri
+  // tidak dihitung).
   const kamarOptions = await kamarBisaDitempati({
     kecualiPenghuniId: baris.id,
     termasukKamarId: baris.idKamar ?? undefined,

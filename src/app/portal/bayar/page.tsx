@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { and, desc, eq, or } from "drizzle-orm";
-import { CalendarCheck2, Hourglass } from "lucide-react";
+import { CalendarCheck2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -21,6 +21,10 @@ import {
   isMidtransConfigured,
 } from "@/lib/midtrans";
 import { getPortalData } from "@/lib/portal";
+import {
+  hariPembayaranPenghuni,
+  tanggalJatuhTempoPeriode,
+} from "@/lib/arsip";
 import {
   bandingkanPeriode,
   daftarPeriodeBayarOnline,
@@ -48,21 +52,24 @@ type KelompokMenunggu = {
 };
 
 /**
- * Halaman "Bayar Sewa Bulanan" — penghuni aktif dapat mengajukan pembayaran
- * tagihan yang belum Lunas dengan melampirkan bukti. Pengajuan ber-status
- * "Menunggu Konfirmasi" ditampilkan terpisah dan bisa dibatalkan.
+ * Halaman "Bayar Sewa Bulanan" — penghuni aktif membayar tagihan yang belum
+ * Lunas: otomatis lewat Midtrans, atau melampirkan bukti bayar manual yang
+ * **langsung dicatat Lunas** (notifikasi otomatis terkirim).
+ *
+ * Data lama yang masih ber-status "Menunggu Konfirmasi" tetap ditampilkan
+ * terpisah agar pengelola dapat memverifikasi/membatalkannya.
  */
 export default async function PortalBayarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ menunggu?: string | string[] }>;
+  searchParams: Promise<{ lunas?: string | string[] }>;
 }) {
   const data = await getPortalData();
   if (!data) redirect("/dashboard");
   if (data.terkunci) redirect("/portal/bayar-awal");
 
   const sp = await searchParams;
-  const baruDikirim = typeof sp.menunggu === "string" && sp.menunggu === "1";
+  const baruLunas = typeof sp.lunas === "string" && sp.lunas === "1";
 
   const hargaSewa = data.hargaSewa ?? 0;
   const tagihan = await daftarTagihanBulanan(data.penghuniId, data.tglMasuk);
@@ -151,6 +158,15 @@ export default async function PortalBayarPage({
     masaDepan: bandingkanPeriode(p, bulanIni) > 0,
   }));
 
+  // Keterangan jadwal pembayaran (cukup ditampilkan di menu ini — tanpa
+  // pemberitahuan/peringatan): tanggal bayar bulanan penghuni & jatuh tempo
+  // tagihan berikutnya.
+  const hariBayar = await hariPembayaranPenghuni(data.penghuniId);
+  const tagihanTerawal = tagihan[0] ?? null;
+  const jatuhTempoTerawal = tagihanTerawal
+    ? tanggalJatuhTempoPeriode(tagihanTerawal, hariBayar)
+    : null;
+
   // Bagian pembayaran online ditampilkan bila masih ada periode yang bisa
   // dibayar, atau bila ada transaksi Midtrans yang perlu diselesaikan.
   const tampilkanMidtrans =
@@ -165,25 +181,63 @@ export default async function PortalBayarPage({
           Bayar tagihan sewa secara <em>online</em>. Pilih <strong>paket</strong>{" "}
           1, 2, atau 6 bulan (boleh bayar di muka) atau centang bulan tertentu,
           lalu bayar <strong>otomatis</strong> lewat Midtrans (Virtual
-          Account/QRIS/E-Wallet/Transfer Bank) —{" "}
-          <strong className="text-white/80">atau</strong> lampirkan{" "}
-          <strong>bukti bayar</strong> agar diverifikasi pengelola.
+          Account/QRIS/E-Wallet/Transfer Bank) — atau lampirkan{" "}
+          <strong>bukti bayar</strong> yang{" "}
+          <strong className="text-white/80">
+            langsung tercatat LUNAS
+          </strong>{" "}
+          tanpa menunggu verifikasi pengelola.
         </p>
       </div>
 
-      {baruDikirim ? (
+      {baruLunas ? (
         <div
           role="status"
-          className="flex items-start gap-2.5 rounded-md border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100"
+          className="flex items-start gap-2.5 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100"
         >
-          <Hourglass aria-hidden className="mt-0.5 size-4 shrink-0 text-amber-300" />
+          <CheckCircle2
+            aria-hidden
+            className="mt-0.5 size-4 shrink-0 text-emerald-300"
+          />
           <span>
-            <strong className="font-bold">Bukti pembayaran diterima.</strong>{" "}
-            Pengajuan Anda sedang menunggu verifikasi pengelola. Bulan yang
-            diajukan tidak dapat diubah sampai pengajuan dikonfirmasi/dibatalkan.
+            <strong className="font-bold">Pembayaran diterima.</strong> Status
+            tagihan yang Anda bayar langsung berubah menjadi{" "}
+            <strong>Lunas</strong> dan notifikasinya sudah masuk ke halaman
+            Notifikasi portal. Terima kasih!
           </span>
         </div>
       ) : null}
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-white/12 bg-white/[0.03] px-4 py-3 text-sm leading-relaxed text-white/70">
+        <span>
+          Jadwal pembayaran Anda:{" "}
+          <strong className="text-white/85">tanggal {hariBayar}</strong> setiap
+          bulan.
+        </span>
+        <span aria-hidden className="hidden text-white/25 sm:inline">
+          •
+        </span>
+        <span>
+          {tagihanTerawal && jatuhTempoTerawal ? (
+            <>
+              Tagihan berikutnya{" "}
+              <strong className="text-white/85">
+                {namaBulan(tagihanTerawal.bulan)} {tagihanTerawal.tahun}
+              </strong>{" "}
+              — jatuh tempo{" "}
+              <strong className="text-white/85">
+                {formatTanggal(jatuhTempoTerawal)}
+              </strong>
+              . Pembayaran dapat dilakukan kapan saja, termasuk lebih awal.
+            </>
+          ) : (
+            <>
+              Seluruh tagihan sewa sudah <strong>Lunas</strong> — tagihan baru
+              muncul otomatis setiap awal bulan.
+            </>
+          )}
+        </span>
+      </div>
 
       <div className={`${cardClass} p-6`}>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -222,8 +276,13 @@ export default async function PortalBayarPage({
               {kelompokList.length > 0 ? (
                 <section className="flex flex-col gap-3">
                   <h2 className="font-display text-lg font-bold tracking-tight text-white">
-                    Pengajuan sedang diverifikasi pengelola
+                    Pengajuan menunggu verifikasi pengelola
                   </h2>
+                  <p className="max-w-2xl text-sm leading-relaxed text-white/60">
+                    Pengajuan berikut dibuat <em>sebelum</em> pembayaran manual
+                    beralih ke otomatis Lunas. Pengelola dapat memverifikasi
+                    (menerima/menolak) atau Anda dapat membatalkannya di sini.
+                  </p>
                   {kelompokList.map((g) => (
                     <div
                       key={g.kelompok}
@@ -283,7 +342,7 @@ export default async function PortalBayarPage({
                         <div className="flex items-center gap-3" aria-hidden>
                           <span className="h-px flex-1 bg-white/10" />
                           <span className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-white/35">
-                            atau kirim bukti manual (diverifikasi pengelola)
+                            atau kirim bukti manual (langsung tercatat Lunas)
                           </span>
                           <span className="h-px flex-1 bg-white/10" />
                         </div>

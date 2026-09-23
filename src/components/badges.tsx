@@ -46,6 +46,30 @@ function bayarBadgeClass(status: string): string {
   }
 }
 
+function pengaduanBadgeClass(status: string): string {
+  switch (status) {
+    case "pending":
+      return "border-amber-400/30 bg-amber-400/10 text-amber-300";
+    case "diproses":
+      return "border-sky-400/30 bg-sky-400/10 text-sky-300";
+    case "selesai":
+      return "border-emerald-400/30 bg-emerald-400/10 text-emerald-300";
+    default:
+      return "border-white/15 bg-white/5 text-white/60";
+  }
+}
+
+function alasanArsipBadgeClass(alasan: string): string {
+  switch (alasan) {
+    case "Proses Keluar":
+      return "border-sky-400/30 bg-sky-400/10 text-sky-300";
+    case "Habis Masa Sewa":
+      return "border-amber-400/30 bg-amber-400/10 text-amber-300";
+    default:
+      return "border-white/15 bg-white/5 text-white/60";
+  }
+}
+
 export function KamarBadge({ status }: { status: string }) {
   return (
     <span className={`${badgeBase} ${kamarBadgeClass(status)}`}>
@@ -69,6 +93,38 @@ export function BayarBadge({ status }: { status: string }) {
     <span className={`${badgeBase} ${bayarBadgeClass(status)}`}>
       <StatusDot />
       {status}
+    </span>
+  );
+}
+
+/**
+ * Badge status pengaduan: `pending` / `diproses` / `selesai`.
+ * `label` dipakai untuk menampilkan huruf awal kapital (mis. "Diproses").
+ */
+export function PengaduanBadge({
+  status,
+  label,
+}: {
+  status: string;
+  label?: string;
+}) {
+  return (
+    <span className={`${badgeBase} ${pengaduanBadgeClass(status)}`}>
+      <StatusDot />
+      {label ?? status}
+    </span>
+  );
+}
+
+/**
+ * Badge alasan pengarsipan penghuni: `Proses Keluar` / `Habis Masa Sewa`.
+ * Dipakai pada menu Arsip (panel admin) & portal penghuni.
+ */
+export function AlasanArsipBadge({ alasan }: { alasan: string }) {
+  return (
+    <span className={`${badgeBase} ${alasanArsipBadgeClass(alasan)}`}>
+      <StatusDot />
+      {alasan}
     </span>
   );
 }

@@ -15,6 +15,7 @@ import {
   textareaClass,
 } from "@/lib/ui";
 import { toTanggalInput, tanggalInputHariIni } from "@/lib/format";
+import { KAPASITAS_KAMAR, labelPenghuniKamar } from "@/lib/kapasitas-kamar";
 import { simpanPenghuni, type PenghuniState } from "./actions";
 
 export type PenghuniFormValue = {
@@ -32,6 +33,10 @@ export type KamarOption = {
   id: string;
   noKamar: string;
   statusKamar: string;
+  /** Jumlah penghuni aktif saat ini (termasuk yang menunggu bayar awal). */
+  terisi: number;
+  /** Sisa slot kamar (maksimal KAPASITAS_KAMAR penghuni per kamar). */
+  sisaSlot: number;
 };
 
 type PenghuniFormProps = {
@@ -139,7 +144,9 @@ export function PenghuniForm({
         </div>
       ) : (
         <label className={fieldClass}>
-          <span className={labelClass}>Kamar (hanya tersedia)</span>
+          <span className={labelClass}>
+            Kamar (maks. {KAPASITAS_KAMAR} penghuni / kamar)
+          </span>
           <select
             name="idKamar"
             defaultValue={defaultValue?.idKamar ?? ""}
@@ -148,17 +155,17 @@ export function PenghuniForm({
             <option value="">— Tanpa kamar —</option>
             {kamarOptions.map((k) => (
               <option key={k.id} value={k.id}>
-                {k.noKamar}
-                {k.statusKamar !== "Tersedia"
-                  ? ` · ${k.statusKamar}`
-                  : ""}
+                {k.noKamar} · {labelPenghuniKamar(k.terisi)} terisi (sisa{" "}
+                {k.sisaSlot} slot)
+                {k.statusKamar !== "Tersedia" ? ` · ${k.statusKamar}` : ""}
               </option>
             ))}
           </select>
           <span className={helpClass}>
             {isEdit
-              ? "Kamar milik penghuni ini tetap ditampilkan sebagai pilihan."
-              : "Kamar akan otomatis berstatus \"Terisi\" — kecuali bila Anda membuatkan akun portal: kamar menunggu Pembayaran Awal penghuni (aturannya \"Bayar di Awal\")."}
+              ? "Kamar milik penghuni ini tetap ditampilkan sebagai pilihan. Satu kamar boleh dihuni maksimal " +
+                `${KAPASITAS_KAMAR} penghuni.`
+              : `Kamar otomatis berstatus "Terisi" — kecuali bila Anda membuatkan akun portal: kamar menunggu Pembayaran Awal penghuni (aturan "Bayar di Awal"). Satu kamar maksimal ${KAPASITAS_KAMAR} penghuni, masing-masing berakun sendiri.`}
           </span>
         </label>
       )}

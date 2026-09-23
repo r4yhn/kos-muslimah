@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { FilterForm } from "@/components/filter-form";
 import { NAMA_BULAN, daftarTahun, formatIDR, formatTanggal } from "@/lib/format";
 import {
   bulanLaporan,
@@ -102,14 +103,15 @@ export default async function LaporanKeuanganPage({
 
       {/* Filter periode */}
       <section className={`${cardClass} p-4`}>
-        <form
-          method="get"
-          action="/laporan"
-          className="flex flex-wrap items-end gap-3"
-        >
+        <FilterForm action="/laporan" className="flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Tahun</span>
-            <select name="tahun" defaultValue={tahun} className={selectClass}>
+            <select
+              key={`tahun-${tahun}`}
+              name="tahun"
+              defaultValue={tahun}
+              className={selectClass}
+            >
               {daftarTahun(tahun - 2).map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -119,7 +121,12 @@ export default async function LaporanKeuanganPage({
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Dari Bulan</span>
-            <select name="dari" defaultValue={dari} className={selectClass}>
+            <select
+              key={`dari-${dari}`}
+              name="dari"
+              defaultValue={dari}
+              className={selectClass}
+            >
               {NAMA_BULAN.map((nama, index) => (
                 <option key={nama} value={index + 1}>
                   {nama}
@@ -129,7 +136,12 @@ export default async function LaporanKeuanganPage({
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Sampai Bulan</span>
-            <select name="sampai" defaultValue={sampai} className={selectClass}>
+            <select
+              key={`sampai-${sampai}`}
+              name="sampai"
+              defaultValue={sampai}
+              className={selectClass}
+            >
               {NAMA_BULAN.map((nama, index) => (
                 <option key={nama} value={index + 1}>
                   {nama}
@@ -143,10 +155,14 @@ export default async function LaporanKeuanganPage({
           <Link href="/laporan" className={btnSecondaryClass}>
             Reset
           </Link>
-        </form>
+        </FilterForm>
         <p className="mt-3 text-xs leading-relaxed text-white/45">
-          Pilih rentang bulan yang sama untuk laporan bulanan (mis. September –
-          September), atau Januari – Desember untuk rekap setahun.
+          Filter berlaku otomatis begitu pilihan diubah — tombol{" "}
+          <span className="text-white/70">Terapkan Filter</span> hanya untuk
+          mengirim ulang nilai yang sedang aktif, dan{" "}
+          <span className="text-white/70">Reset</span> mengembalikan ke periode
+          default (tahun berjalan, Januari – Desember). Pilih bulan yang sama
+          (mis. September – September) untuk laporan bulanan.
         </p>
       </section>
 

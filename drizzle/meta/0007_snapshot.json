@@ -1,0 +1,963 @@
+{
+  "id": "b5d6ef30-f276-476b-ab2e-784bb2632539",
+  "prevId": "ccfabf2a-8bd2-4673-81d2-b6ce6157ece8",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.arsip_penghuni": {
+      "name": "arsip_penghuni",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_penghuni": {
+          "name": "id_penghuni",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nama": {
+          "name": "nama",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jenis_kelamin": {
+          "name": "jenis_kelamin",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alamat": {
+          "name": "alamat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "no_hp": {
+          "name": "no_hp",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "no_kamar": {
+          "name": "no_kamar",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tipe_kamar": {
+          "name": "tipe_kamar",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "harga_sewa": {
+          "name": "harga_sewa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tgl_masuk": {
+          "name": "tgl_masuk",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tgl_keluar": {
+          "name": "tgl_keluar",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alasan": {
+          "name": "alasan",
+          "type": "alasan_arsip",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah_pembayaran": {
+          "name": "jumlah_pembayaran",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_pembayaran": {
+          "name": "total_pembayaran",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_tunggakan": {
+          "name": "total_tunggakan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "periode_terakhir": {
+          "name": "periode_terakhir",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "riwayat_pembayaran": {
+          "name": "riwayat_pembayaran",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "catatan": {
+          "name": "catatan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "arsip_penghuni_id_penghuni_idx": {
+          "name": "arsip_penghuni_id_penghuni_idx",
+          "columns": [
+            {
+              "expression": "id_penghuni",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "arsip_penghuni_tgl_keluar_idx": {
+          "name": "arsip_penghuni_tgl_keluar_idx",
+          "columns": [
+            {
+              "expression": "tgl_keluar",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "arsip_penghuni_id_penghuni_penghuni_id_fk": {
+          "name": "arsip_penghuni_id_penghuni_penghuni_id_fk",
+          "tableFrom": "arsip_penghuni",
+          "tableTo": "penghuni",
+          "columnsFrom": [
+            "id_penghuni"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kamar": {
+      "name": "kamar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "no_kamar": {
+          "name": "no_kamar",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipe_kamar": {
+          "name": "tipe_kamar",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "harga_sewa": {
+          "name": "harga_sewa",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status_kamar": {
+          "name": "status_kamar",
+          "type": "status_kamar",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Tersedia'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "kamar_no_kamar_unique": {
+          "name": "kamar_no_kamar_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "no_kamar"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notifikasi": {
+      "name": "notifikasi",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_user": {
+          "name": "id_user",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "judul": {
+          "name": "judul",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pesan": {
+          "name": "pesan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dibaca": {
+          "name": "dibaca",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "notifikasi_id_user_idx": {
+          "name": "notifikasi_id_user_idx",
+          "columns": [
+            {
+              "expression": "id_user",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notifikasi_id_user_users_id_fk": {
+          "name": "notifikasi_id_user_users_id_fk",
+          "tableFrom": "notifikasi",
+          "tableTo": "users",
+          "columnsFrom": [
+            "id_user"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.pembayaran": {
+      "name": "pembayaran",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_penghuni": {
+          "name": "id_penghuni",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tanggal_bayar": {
+          "name": "tanggal_bayar",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "jatuh_tempo": {
+          "name": "jatuh_tempo",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bukti_pembayaran": {
+          "name": "bukti_pembayaran",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kelompok_konfirmasi": {
+          "name": "kelompok_konfirmasi",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bulan": {
+          "name": "bulan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tahun": {
+          "name": "tahun",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jumlah_bayar": {
+          "name": "jumlah_bayar",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metode_bayar": {
+          "name": "metode_bayar",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "keterangan": {
+          "name": "keterangan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_bayar": {
+          "name": "status_bayar",
+          "type": "status_bayar",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "pembayaran_bulan_tahun_idx": {
+          "name": "pembayaran_bulan_tahun_idx",
+          "columns": [
+            {
+              "expression": "bulan",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tahun",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pembayaran_id_penghuni_penghuni_id_fk": {
+          "name": "pembayaran_id_penghuni_penghuni_id_fk",
+          "tableFrom": "pembayaran",
+          "tableTo": "penghuni",
+          "columnsFrom": [
+            "id_penghuni"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "pembayaran_bulan_check": {
+          "name": "pembayaran_bulan_check",
+          "value": "\"pembayaran\".\"bulan\" BETWEEN 1 AND 12"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.pengaduan": {
+      "name": "pengaduan",
+      "schema": "",
+      "columns": {
+        "id_pengaduan": {
+          "name": "id_pengaduan",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_penghuni": {
+          "name": "id_penghuni",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deskripsi_kendala": {
+          "name": "deskripsi_kendala",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tanggal_lapor": {
+          "name": "tanggal_lapor",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "status_penyelesaian": {
+          "name": "status_penyelesaian",
+          "type": "status_pengaduan",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "catatan_admin": {
+          "name": "catatan_admin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ditangani_pada": {
+          "name": "ditangani_pada",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "pengaduan_id_penghuni_idx": {
+          "name": "pengaduan_id_penghuni_idx",
+          "columns": [
+            {
+              "expression": "id_penghuni",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "pengaduan_status_idx": {
+          "name": "pengaduan_status_idx",
+          "columns": [
+            {
+              "expression": "status_penyelesaian",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "pengaduan_id_penghuni_penghuni_id_fk": {
+          "name": "pengaduan_id_penghuni_penghuni_id_fk",
+          "tableFrom": "pengaduan",
+          "tableTo": "penghuni",
+          "columnsFrom": [
+            "id_penghuni"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.penghuni": {
+      "name": "penghuni",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "id_kamar": {
+          "name": "id_kamar",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nama": {
+          "name": "nama",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jenis_kelamin": {
+          "name": "jenis_kelamin",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alamat": {
+          "name": "alamat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "no_hp": {
+          "name": "no_hp",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tgl_masuk": {
+          "name": "tgl_masuk",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "status_penghuni",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'Aktif'"
+        },
+        "perlu_bayar_awal": {
+          "name": "perlu_bayar_awal",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "penghuni_id_kamar_kamar_id_fk": {
+          "name": "penghuni_id_kamar_kamar_id_fk",
+          "tableFrom": "penghuni",
+          "tableTo": "kamar",
+          "columnsFrom": [
+            "id_kamar"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.transaksi_online": {
+      "name": "transaksi_online",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "order_id": {
+          "name": "order_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id_penghuni": {
+          "name": "id_penghuni",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tipe": {
+          "name": "tipe",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nominal": {
+          "name": "nominal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status_midtrans": {
+          "name": "status_midtrans",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "snap_token": {
+          "name": "snap_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "redirect_url": {
+          "name": "redirect_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metode_bayar": {
+          "name": "metode_bayar",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "detail": {
+          "name": "detail",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"periode\":[],\"label\":\"\"}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "transaksi_online_id_penghuni_idx": {
+          "name": "transaksi_online_id_penghuni_idx",
+          "columns": [
+            {
+              "expression": "id_penghuni",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "transaksi_online_status_idx": {
+          "name": "transaksi_online_status_idx",
+          "columns": [
+            {
+              "expression": "status_midtrans",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "transaksi_online_id_penghuni_penghuni_id_fk": {
+          "name": "transaksi_online_id_penghuni_penghuni_id_fk",
+          "tableFrom": "transaksi_online",
+          "tableTo": "penghuni",
+          "columnsFrom": [
+            "id_penghuni"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "transaksi_online_order_id_unique": {
+          "name": "transaksi_online_order_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "order_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "user_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'admin'"
+        },
+        "id_penghuni": {
+          "name": "id_penghuni",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "users_id_penghuni_penghuni_id_fk": {
+          "name": "users_id_penghuni_penghuni_id_fk",
+          "tableFrom": "users",
+          "tableTo": "penghuni",
+          "columnsFrom": [
+            "id_penghuni"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        },
+        "users_id_penghuni_unique": {
+          "name": "users_id_penghuni_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id_penghuni"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.alasan_arsip": {
+      "name": "alasan_arsip",
+      "schema": "public",
+      "values": [
+        "Proses Keluar",
+        "Habis Masa Sewa"
+      ]
+    },
+    "public.status_bayar": {
+      "name": "status_bayar",
+      "schema": "public",
+      "values": [
+        "Lunas",
+        "Menunggu Konfirmasi",
+        "Belum Lunas"
+      ]
+    },
+    "public.status_kamar": {
+      "name": "status_kamar",
+      "schema": "public",
+      "values": [
+        "Tersedia",
+        "Terisi",
+        "Perbaikan"
+      ]
+    },
+    "public.status_pengaduan": {
+      "name": "status_pengaduan",
+      "schema": "public",
+      "values": [
+        "pending",
+        "diproses",
+        "selesai"
+      ]
+    },
+    "public.status_penghuni": {
+      "name": "status_penghuni",
+      "schema": "public",
+      "values": [
+        "Aktif",
+        "Keluar"
+      ]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "admin",
+        "pemilik",
+        "penghuni"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
-import { ArrowRight, CheckCircle2, CreditCard, DoorOpen, ReceiptText } from "lucide-react";
+import {
+  ArrowRight,
+  Bell,
+  CheckCircle2,
+  CreditCard,
+  DoorOpen,
+  MessageSquareWarning,
+  ReceiptText,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -110,9 +118,9 @@ export default async function PortalBerandaPage({
           Menu Penghuni
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/60">
-          Bayar tagihan sewa bulanan secara <em>online</em> atau lihat riwayat
-          pembayaran Anda. Jika ada kendala tagihan, silakan hubungi pengelola
-          kos.
+          Bayar tagihan sewa bulanan secara <em>online</em>, lihat riwayat
+          pembayaran, baca notifikasi akun, atau laporkan kendala kamar Anda.
+          Jika ada kendala tagihan, silakan hubungi pengelola kos.
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Link href="/portal/bayar" className={btnPrimaryClass}>
@@ -124,7 +132,20 @@ export default async function PortalBerandaPage({
             <ReceiptText className="size-4" aria-hidden />
             Riwayat Pembayaran
           </Link>
+          <Link href="/portal/notifikasi" className={btnSecondaryClass}>
+            <Bell className="size-4" aria-hidden />
+            Notifikasi
+          </Link>
+          <Link href="/portal/pengaduan" className={btnSecondaryClass}>
+            <MessageSquareWarning className="size-4" aria-hidden />
+            Pengaduan
+          </Link>
         </div>
+        <p className="mt-4 text-xs leading-relaxed text-white/45">
+          Bila Anda berhenti menghuni kos, cukup keluar (<em>logout</em>) dari
+          portal melalui tombol <strong className="text-white/70">Keluar</strong>{" "}
+          di kanan atas. Ada kendala lain? Silakan hubungi pengelola kos.
+        </p>
       </section>
     </div>
   );

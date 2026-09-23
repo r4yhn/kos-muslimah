@@ -1,7 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, sql } from "drizzle-orm";
 import { AuthError } from "next-auth";
 import { revalidatePath } from "next/cache";
 
@@ -9,6 +9,7 @@ import { signIn } from "@/auth";
 import { db } from "@/db";
 import { kamar, penghuni, users } from "@/db/schema";
 import { formatIDR, parseTanggal } from "@/lib/format";
+import { KAPASITAS_KAMAR } from "@/lib/kamar-options";
 import { kirimNotifikasiKeRole } from "@/lib/notifikasi";
 
 export type DaftarState = { error?: string } | undefined;
@@ -16,12 +17,16 @@ export type DaftarState = { error?: string } | undefined;
 const JENIS_VALID = ["Perempuan", "Laki-laki"] as const;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Penanda error internal saat kamar ternyata sudah penuh di dalam transaksi. */
+const KODE_KAMAR_PENUH = "KAMAR_PENUH";
+
 /**
  * Pendaftaran mandiri penghuni baru (halaman publik /daftar).
  *
  * Alur "Bayar di Awal":
- * 1. Penghuni mengisi data identitas + memilih kamar Tersedia, lalu membuat
- *    email & password sendiri.
+ * 1. Penghuni mengisi data identitas + memilih kamar yang masih punya slot
+ *    (maksimal 2 penghuni per kamar; setiap penghuni punya akun sendiri),
+ *    lalu membuat email & password sendiri.
  * 2. Sistem membuat data penghuni (`perlu_bayar_awal = true`) + akun login
  *    role `penghuni` yang tertaut, dan memberi tahu admin via notifikasi.
  * 3. Penghuni langsung masuk (auto-login) lalu diarahkan ke /portal/bayar-awal;
@@ -69,8 +74,8 @@ export async function daftarPenghuni(
     };
   }
 
-  // Kamar yang dipilih harus Tersedia & belum dipesan penghuni lain yang
-  // masih menunggu pembayaran awal.
+  // Kamar yang dipilih harus masih punya slot: maksimal KAPASITAS_KAMAR (2)
+  // penghuni aktif per kamar, dan tidak sedang dalam perbaikan.
   const [room] = await db
     .select({
       id: kamar.id,
@@ -82,20 +87,19 @@ export async function daftarPenghuni(
     .where(eq(kamar.id, idKamar))
     .limit(1);
   if (!room) return { error: "Kamar yang dipilih tidak ditemukan." };
-  if (room.statusKamar !== "Tersedia") {
+  if (room.statusKamar === "Perbaikan") {
     return {
-      error: `Kamar ${room.noKamar} tidak tersedia (status: ${room.statusKamar}).`,
+      error: `Kamar ${room.noKamar} sedang dalam perbaikan. Silakan pilih kamar lain.`,
     };
   }
-  const [pemesan] = await db
-    .select({ id: penghuni.id })
+  const [terisiRow] = await db
+    .select({ total: count() })
     .from(penghuni)
-    .where(and(eq(penghuni.idKamar, idKamar), eq(penghuni.perluBayarAwal, true)))
-    .limit(1);
-  if (pemesan) {
+    .where(and(eq(penghuni.idKamar, idKamar), eq(penghuni.status, "Aktif")));
+  const terisi = terisiRow?.total ?? 0;
+  if (terisi >= KAPASITAS_KAMAR) {
     return {
-      error:
-        "Kamar sedang dipesan penghuni lain yang belum menyelesaikan Pembayaran Awal. Silakan pilih kamar lain.",
+      error: `Kamar ${room.noKamar} sudah penuh (maksimal ${KAPASITAS_KAMAR} penghuni). Silakan pilih kamar lain.`,
     };
   }
 
@@ -103,6 +107,20 @@ export async function daftarPenghuni(
 
   try {
     await db.transaction(async (tx) => {
+      // Kunci baris kamar agar dua pendaftaran yang berbarengan tidak
+      // melewati kapasitas (maksimal KAPASITAS_KAMAR penghuni per kamar).
+      await tx.execute(
+        sql`select "id" from "kamar" where "id" = ${idKamar} for update`
+      );
+
+      const [cek] = await tx
+        .select({ total: count() })
+        .from(penghuni)
+        .where(and(eq(penghuni.idKamar, idKamar), eq(penghuni.status, "Aktif")));
+      if ((cek?.total ?? 0) >= KAPASITAS_KAMAR) {
+        throw new Error(KODE_KAMAR_PENUH);
+      }
+
       const [baru] = await tx
         .insert(penghuni)
         .values({
@@ -126,7 +144,13 @@ export async function daftarPenghuni(
         idPenghuni: baru.id,
       });
     });
-  } catch {
+  } catch (error) {
+    // Penuh karena pendaftaran lain menyelesaikan lebih dulu.
+    if (error instanceof Error && error.message === KODE_KAMAR_PENUH) {
+      return {
+        error: `Kamar ${room.noKamar} baru saja penuh (maksimal ${KAPASITAS_KAMAR} penghuni). Silakan pilih kamar lain.`,
+      };
+    }
     return { error: "Pendaftaran gagal. Silakan coba lagi." };
   }
 
@@ -134,7 +158,7 @@ export async function daftarPenghuni(
   await kirimNotifikasiKeRole(
     "admin",
     "Penghuni Baru Mendaftar",
-    `${nama} mendaftar mandiri dan memilih Kamar ${room.noKamar} (${formatIDR.format(room.hargaSewa)}/bulan). Menunggu Pembayaran Awal untuk resmi aktif.`
+    `${nama} mendaftar mandiri dan memilih Kamar ${room.noKamar} (${formatIDR.format(room.hargaSewa)}/bulan, slot ${terisi + 1}/${KAPASITAS_KAMAR}). Menunggu Pembayaran Awal untuk resmi aktif.`
   );
 
   revalidatePath("/penghuni");

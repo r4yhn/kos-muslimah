@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { sinkronkanArsipPenghuni } from "@/lib/arsip";
 import { sinkronTagihanSemuaPenghuni } from "@/lib/tagihan";
 
 export const dynamic = "force-dynamic";
@@ -6,9 +7,14 @@ export const dynamic = "force-dynamic";
 /**
  * GET /api/cron/generate-tagihan
  *
- * Memicu auto-generate tagihan "Belum Lunas" untuk seluruh penghuni aktif
- * (idempotent). Dipanggil manual saat admin login, dan dapat dijadwalkan
- * (mis. setiap tanggal 1) lewat cron platform Vercel:
+ * Memicu otomasi berkala (idempotent):
+ * 1. auto-generate tagihan "Belum Lunas" untuk seluruh penghuni aktif;
+ * 2. melengkapi **Arsip** — data lama ber-status `Keluar` yang belum punya
+ *    baris di `arsip_penghuni` (mis. ditandai keluar sebelum fitur arsip ada)
+ *    dipindahkan ke menu Arsip tanpa menghapus data aslinya.
+ *
+ * Dipanggil manual saat admin login, dan dapat dijadwalkan (mis. setiap
+ * tanggal 1 dan/atau harian) lewat cron platform Vercel:
  *
  *   vercel cron "0 0 1 * *" -> https://<host>/api/cron/generate-tagihan
  *
@@ -31,7 +37,8 @@ export async function GET(request: Request) {
 
   try {
     const tagihanBaru = await sinkronTagihanSemuaPenghuni();
-    return Response.json({ ok: true, tagihanBaru });
+    const arsip = await sinkronkanArsipPenghuni();
+    return Response.json({ ok: true, tagihanBaru, arsip });
   } catch (error) {
     console.error("Gagal generate tagihan:", error);
     return Response.json(

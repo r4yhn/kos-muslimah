@@ -1,5 +1,5 @@
 import { count, eq, ilike, or } from "drizzle-orm";
-import { LogOut, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Archive, LogOut, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -8,6 +8,7 @@ import { ConfirmForm } from "@/components/confirm-form";
 import { PenghuniBadge } from "@/components/badges";
 import { db } from "@/db";
 import { kamar, pembayaran, penghuni } from "@/db/schema";
+import { sinkronkanArsipPenghuni } from "@/lib/arsip";
 import { formatTanggal } from "@/lib/format";
 import {
   btnDangerIconGhostClass,
@@ -34,6 +35,15 @@ export default async function PenghuniPage({
 
   const sp = await searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
+
+  /**
+   * Fitur "Arsip Otomatis & Pengosongan Kamar": melengkapi arsip untuk data
+   * lama ber-status "Keluar" yang belum punya baris arsip (mis. ditandai keluar
+   * sebelum fitur arsip ada). Idempotent — aman dipanggil setiap kali halaman
+   * dibuka.
+   */
+  const sinkronArsip = await sinkronkanArsipPenghuni();
+  const jumlahArsipBaru = sinkronArsip.backfill;
 
   const where = q
     ? or(
@@ -81,8 +91,17 @@ export default async function PenghuniPage({
           <p className={eyebrowClass}>Kelola · Penghuni</p>
           <h1 className={headingClass}>Data Penghuni</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/60">
-            Daftarkan penghuni baru, alihkan kamar, atau tandai penghuni yang
-            telah keluar.{" "}
+            Daftarkan penghuni baru, alihkan kamar, atau proses penghuni yang
+            telah keluar. Data penghuni yang keluar — diproses dari halaman ini,
+            diajukan sendiri lewat portal, maupun saat penghuni{" "}
+            <em>logout</em> dari portal — otomatis tersimpan di menu{" "}
+            <Link
+              href="/arsip"
+              className="font-medium text-primary hover:underline"
+            >
+              Arsip
+            </Link>{" "}
+            tanpa dihapus permanen, dan kamarnya kembali ber-status Tersedia.{" "}
             {q ? `Hasil pencarian untuk “${q}”.` : ""}
           </p>
         </div>
@@ -128,6 +147,26 @@ export default async function PenghuniPage({
           {jumlahKeluar} keluar
         </span>
       </section>
+
+      {jumlahArsipBaru > 0 ? (
+        <p
+          role="status"
+          className="flex items-start gap-2.5 rounded-md border border-sky-400/25 bg-sky-400/10 px-4 py-3 text-sm leading-relaxed text-sky-100"
+        >
+          <Archive aria-hidden className="mt-0.5 size-4 shrink-0 text-sky-300" />
+          <span>
+            <strong className="font-bold">
+              {jumlahArsipBaru} data lama dilengkapi ke arsip.
+            </strong>{" "}
+            Penghuni ber-status keluar yang belum punya baris arsip dipindahkan
+            ke menu{" "}
+            <Link href="/arsip" className="font-medium text-sky-100 underline">
+              Arsip
+            </Link>{" "}
+            tanpa menghapus data aslinya.
+          </span>
+        </p>
+      ) : null}
 
       {/* Tabel penghuni */}
       <section className="animate-rise overflow-hidden rounded-xl border border-primary/20 bg-surface shadow-card">
@@ -207,13 +246,13 @@ export default async function PenghuniPage({
                         {p.status === "Aktif" ? (
                           <ConfirmForm
                             action={keluarkanPenghuni}
-                            confirmMessage={`Tandai "${p.nama}" telah keluar? Kamar ${p.kamarNo ?? ""} akan otomatis tersedia kembali.`}
+                            confirmMessage={`Proses keluar "${p.nama}"? Data riwayatnya dipindahkan ke menu Arsip (tidak dihapus permanen) dan kamar ${p.kamarNo ?? ""} otomatis kembali Tersedia.`}
                           >
                             <input type="hidden" name="id" value={p.id} />
                             <button
                               type="submit"
-                              title="Tandai keluar"
-                              aria-label={`Tandai ${p.nama} keluar`}
+                              title="Proses keluar & arsipkan data"
+                              aria-label={`Proses keluar penghuni ${p.nama}`}
                               className={btnIconGhostClass}
                             >
                               <LogOut className="size-4" aria-hidden />

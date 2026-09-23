@@ -1,11 +1,20 @@
 import { and, desc, eq, isNotNull, type SQL } from "drizzle-orm";
-import { ChartColumn, FileDown, Hourglass, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  ChartColumn,
+  FileDown,
+  Hourglass,
+  Paperclip,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { BayarBadge } from "@/components/badges";
 import { ConfirmForm } from "@/components/confirm-form";
+import { FilterForm } from "@/components/filter-form";
 import { db } from "@/db";
 import { kamar, pembayaran, penghuni } from "@/db/schema";
 import { sinkronTagihanSemuaPenghuni, sudahTerlambat } from "@/lib/tagihan";
@@ -92,6 +101,7 @@ export default async function PembayaranPage({
       metodeBayar: pembayaran.metodeBayar,
       statusBayar: pembayaran.statusBayar,
       keterangan: pembayaran.keterangan,
+      buktiPembayaran: pembayaran.buktiPembayaran,
       namaPenghuni: penghuni.nama,
       statusPenghuni: penghuni.status,
       kamarNo: kamar.noKamar,
@@ -209,10 +219,18 @@ export default async function PembayaranPage({
 
       {/* Filter */}
       <section className={`${cardClass} p-4`}>
-        <form method="get" action="/pembayaran" className="flex flex-wrap items-end gap-3">
+        <FilterForm
+          action="/pembayaran"
+          className="flex flex-wrap items-end gap-3"
+        >
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Bulan</span>
-            <select name="bulan" defaultValue={bulan} className={selectClass}>
+            <select
+              key={`bulan-${bulan}`}
+              name="bulan"
+              defaultValue={bulan}
+              className={selectClass}
+            >
               <option value="">Semua bulan</option>
               {NAMA_BULAN.map((nama, index) => (
                 <option key={nama} value={index + 1}>
@@ -223,7 +241,12 @@ export default async function PembayaranPage({
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Tahun</span>
-            <select name="tahun" defaultValue={tahun} className={selectClass}>
+            <select
+              key={`tahun-${tahun}`}
+              name="tahun"
+              defaultValue={tahun}
+              className={selectClass}
+            >
               <option value="">Semua tahun</option>
               {daftarTahun().map((t) => (
                 <option key={t} value={t}>
@@ -235,6 +258,7 @@ export default async function PembayaranPage({
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Status</span>
             <select
+              key={`status-${filterStatus}`}
               name="status"
               defaultValue={filterStatus}
               className={selectClass}
@@ -251,10 +275,10 @@ export default async function PembayaranPage({
           <Link href="/pembayaran" className={btnSecondaryClass}>
             Reset
           </Link>
-        </form>
+        </FilterForm>
       </section>
 
-      {/* ===== Verifikasi pembayaran online (fitur 1B) ===== */}
+      {/* ===== Verifikasi pengajuan lama (status "Menunggu Konfirmasi") ===== */}
       {verifikasiList.length > 0 ? (
         <section className="flex flex-col gap-4">
           <div className="flex items-start gap-2.5">
@@ -263,9 +287,15 @@ export default async function PembayaranPage({
               <h2 className="font-display text-xl font-bold tracking-tight text-white">
                 Verifikasi Pembayaran ({verifikasiList.length} pengajuan)
               </h2>
-              <p className="mt-1 text-sm leading-relaxed text-white/60">
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/60">
                 Periksa bukti yang dikirim penghuni. Menyetujui mencatat periode
                 tersebut sebagai Lunas; menolak mengembalikannya menjadi tagihan.
+                <br />
+                <span className="text-white/45">
+                  Pembayaran baru (Midtrans maupun bukti manual) kini otomatis
+                  tercatat Lunas — kartu ini hanya muncul untuk pengajuan lama
+                  yang belum diverifikasi.
+                </span>
               </p>
             </div>
           </div>
@@ -444,7 +474,22 @@ export default async function PembayaranPage({
                       {r.statusBayar === "Belum Lunas" ? "—" : r.metodeBayar}
                     </td>
                     <td className={cellClass}>
-                      <BayarBadge status={r.statusBayar} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <BayarBadge status={r.statusBayar} />
+                        {r.buktiPembayaran ? (
+                          <a
+                            href={r.buktiPembayaran}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Lihat bukti pembayaran yang dikirim penghuni"
+                            aria-label={`Lihat bukti pembayaran ${r.namaPenghuni} ${namaBulan(r.bulan)} ${r.tahun}`}
+                            className="inline-flex min-h-[28px] items-center gap-1 rounded-full border border-primary/30 px-2.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-primary/80 transition-colors duration-[100ms] ease-brand hover:border-primary hover:bg-primary/10 hover:text-primary"
+                          >
+                            <Paperclip className="size-3" aria-hidden />
+                            Bukti
+                          </a>
+                        ) : null}
+                      </div>
                     </td>
                     <td className={`${cellClass} text-right`}>
                       <div className="flex items-center justify-end gap-1.5">

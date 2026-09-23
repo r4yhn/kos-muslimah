@@ -1,0 +1,15 @@
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
+ PRD.MD                                        | 393 ++++++++++++++++++++++----
+ README.md                                     | 170 ++++++++---
+ src/app/portal/actions.ts                     | 105 +++++--
+ src/app/portal/bayar-awal/bayar-awal-form.tsx |   6 +-
+ src/app/portal/bayar-awal/page.tsx            |  46 ++-
+ src/app/portal/bayar/actions.ts               |  39 ++-
+ src/app/portal/bayar/bayar-form.tsx           |   5 +-
+ src/app/portal/bayar/page.tsx                 |  93 ++++--
+ src/app/portal/layout.tsx                     |  62 ++--
+ src/app/portal/page.tsx                       |  29 +-
+ src/app/portal/riwayat/page.tsx               |   2 +-
+ src/components/portal-nav.tsx                 |  16 +-
+ 12 files changed, 747 insertions(+), 219 deletions(-)
+DONE 

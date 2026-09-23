@@ -6,14 +6,15 @@ import { auth } from "@/auth";
 import { AppNav } from "@/components/app-nav";
 import { BrandMark } from "@/components/brand-mark";
 import { hitungNotifikasiBelumDibaca } from "@/lib/notifikasi";
+import { berandaPeran } from "@/lib/role";
 import { logout } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Layout bersama seluruh halaman panel (/dashboard, /kamar, /penghuni,
- * /pembayaran, /laporan). Melindungi route (wajib login) dan menyediakan
- * navigasi konsisten + tombol keluar.
+ * /pembayaran, /laporan, /pengaduan, /notifikasi). Melindungi route (wajib
+ * login) dan menyediakan navigasi konsisten + tombol keluar.
  */
 export default async function PanelLayout({
   children,
@@ -23,9 +24,11 @@ export default async function PanelLayout({
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  // Panel admin (dashboard/kamar/penghuni/pembayaran/laporan) khusus role
-  // "admin".
-  if (session.user.role === "penghuni") redirect("/portal");
+  // Panel pengelola khusus role "admin" (pemilik -> /monitoring, penghuni ->
+  // /portal).
+  if (session.user.role !== "admin") {
+    redirect(berandaPeran(session.user.role));
+  }
 
   const name = session.user.name ?? "Pengelola";
   const email = session.user.email ?? "";
@@ -50,14 +53,18 @@ export default async function PanelLayout({
             </div>
 
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="hidden text-right lg:block">
+              <Link
+                href="/profil"
+                title="Ubah profil & password"
+                className="hidden rounded-md px-2.5 py-1 text-right transition-colors duration-[100ms] ease-brand hover:bg-primary/10 lg:block"
+              >
                 <p className="text-sm font-bold leading-tight text-white">
                   {name}
                 </p>
                 <p className="font-mono text-[11px] leading-tight text-white/50">
                   {email}
                 </p>
-              </div>
+              </Link>
               <Link
                 href="/notifikasi"
                 aria-label={`Notifikasi${belumDibaca > 0 ? ` — ${belumDibaca} belum dibaca` : ""}`}

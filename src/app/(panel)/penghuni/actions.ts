@@ -9,7 +9,9 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { db } from "@/db";
 import { kamar, pembayaran, penghuni, users } from "@/db/schema";
+import { arsipkanPenghuni } from "@/lib/arsip";
 import { parseTanggal } from "@/lib/format";
+import { KAPASITAS_KAMAR } from "@/lib/kamar-options";
 import { sinkronTagihanPenghuni } from "@/lib/tagihan";
 
 export type PenghuniState = { error?: string } | undefined;
@@ -19,7 +21,9 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 async function isAutentik(): Promise<boolean> {
   const session = await auth();
-  return Boolean(session?.user);
+  // Hanya pengelola (role "admin") yang boleh menambah/mengubah/menghapus data
+  // penghuni. Role "pemilik" bersifat read-only di /monitoring.
+  return session?.user?.role === "admin";
 }
 
 /**
@@ -113,34 +117,32 @@ export async function simpanPenghuni(
 
   if (idKamarBaru) {
     const [room] = await db
-      .select({ id: kamar.id, statusKamar: kamar.statusKamar })
+      .select({
+        id: kamar.id,
+        noKamar: kamar.noKamar,
+        statusKamar: kamar.statusKamar,
+      })
       .from(kamar)
       .where(eq(kamar.id, idKamarBaru))
       .limit(1);
     if (!room) return { error: "Kamar yang dipilih tidak ditemukan." };
     const kamarSamaDenganLama = Boolean(id && idKamarLama === idKamarBaru);
-    if (!kamarSamaDenganLama && room.statusKamar !== "Tersedia") {
-      return {
-        error: `Kamar tersebut tidak tersedia (status saat ini: ${room.statusKamar}).`,
-      };
-    }
-    // Aturan Bayar di Awal: kamar boleh berstatus "Tersedia" tetapi sedang
-    // dipesan penghuni lain yang belum bayar awal — jangan sampai dipesan dua kali.
-    if (room.statusKamar === "Tersedia") {
-      const [pemesan] = await db
-        .select({ idPenghuni: penghuni.id })
+    if (!kamarSamaDenganLama) {
+      if (room.statusKamar === "Perbaikan") {
+        return {
+          error: `Kamar ${room.noKamar} sedang dalam perbaikan. Silakan pilih kamar lain.`,
+        };
+      }
+      // Kapasitas: maksimal KAPASITAS_KAMAR (2) penghuni aktif per kamar.
+      const [terisiRow] = await db
+        .select({ total: count() })
         .from(penghuni)
         .where(
-          and(
-            eq(penghuni.idKamar, idKamarBaru),
-            eq(penghuni.perluBayarAwal, true)
-          )
-        )
-        .limit(1);
-      if (pemesan && (!id || pemesan.idPenghuni !== id)) {
+          and(eq(penghuni.idKamar, idKamarBaru), eq(penghuni.status, "Aktif"))
+        );
+      if ((terisiRow?.total ?? 0) >= KAPASITAS_KAMAR) {
         return {
-          error:
-            "Kamar sedang dipesan penghuni lain yang belum menyelesaikan Pembayaran Awal.",
+          error: `Kamar ${room.noKamar} sudah penuh (maksimal ${KAPASITAS_KAMAR} penghuni). Pilih kamar lain.`,
         };
       }
     }
@@ -248,48 +250,29 @@ export async function simpanPenghuni(
   redirect("/penghuni");
 }
 
-/** Tandai penghuni keluar: kamar dikosongkan otomatis. */
+/**
+ * Proses "keluar" penghuni dari panel pengelola.
+ *
+ * Fitur **Arsip Otomatis & Pengosongan Kamar**: data riwayat penghuni
+ * dipindahkan ke tabel `arsip_penghuni` (menu **Arsip**) — identitas, kamar
+ * yang ditinggalkan, dan salinan riwayat pembayaran — lalu kamarnya otomatis
+ * kembali ber-status "Tersedia" bila tidak ada penghuni aktif lain. Tidak ada
+ * data yang dihapus permanen.
+ */
 export async function keluarkanPenghuni(formData: FormData): Promise<void> {
   if (!(await isAutentik())) return;
 
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
 
-  const [row] = await db
-    .select({
-      id: penghuni.id,
-      status: penghuni.status,
-      idKamar: penghuni.idKamar,
-    })
-    .from(penghuni)
-    .where(eq(penghuni.id, id))
-    .limit(1);
-  if (!row || row.status === "Keluar") return;
-
-  await db.transaction(async (tx) => {
-    await tx
-      .update(penghuni)
-      .set({ status: "Keluar", idKamar: null, perluBayarAwal: false })
-      .where(eq(penghuni.id, id));
-
-    if (row.idKamar) {
-      const [sisa] = await tx
-        .select({ total: count() })
-        .from(penghuni)
-        .where(
-          and(eq(penghuni.idKamar, row.idKamar), eq(penghuni.status, "Aktif"))
-        );
-      if ((sisa?.total ?? 0) === 0) {
-        await tx
-          .update(kamar)
-          .set({ statusKamar: "Tersedia" })
-          .where(eq(kamar.id, row.idKamar));
-      }
-    }
-  });
+  // `arsipkanPenghuni` idempotent: penghuni yang sudah diarsipkan akan
+  // dilewati tanpa error.
+  await arsipkanPenghuni(id, "Proses Keluar");
 
   revalidatePath("/penghuni");
+  revalidatePath("/arsip");
   revalidatePath("/kamar");
+  revalidatePath("/dashboard");
 }
 
 /**

@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Archive,
   ChartColumn,
   DoorOpen,
   LayoutDashboard,
+  MessageSquareWarning,
   ReceiptText,
+  UserCircle,
+  UserCog,
   Users,
 } from "lucide-react";
 
@@ -14,8 +18,12 @@ const links = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/kamar", label: "Kamar", icon: DoorOpen },
   { href: "/penghuni", label: "Penghuni", icon: Users },
+  { href: "/arsip", label: "Arsip", icon: Archive },
   { href: "/pembayaran", label: "Pembayaran", icon: ReceiptText },
+  { href: "/pengaduan", label: "Pengaduan", icon: MessageSquareWarning },
   { href: "/laporan", label: "Laporan Keuangan", icon: ChartColumn },
+  { href: "/akun", label: "Kelola Akun", icon: UserCog },
+  { href: "/profil", label: "Profil", icon: UserCircle },
 ] as const;
 
 /** Navigasi utama panel — disorot berdasarkan path aktif. */

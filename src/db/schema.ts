@@ -19,8 +19,17 @@ import { sql } from "drizzle-orm";
  * ENUM
  * ================================================================ */
 
-/** Peran akun: admin (pengelola) / penghuni (portal mandiri) */
-export const userRoleEnum = pgEnum("user_role", ["admin", "penghuni"]);
+/**
+ * Peran akun:
+ * - `admin`    -> pengelola yang mengelola seluruh data (panel).
+ * - `pemilik`  -> Pemilik Kos: pemantauan **read-only** (`/monitoring`).
+ * - `penghuni` -> portal mandiri penghuni (`/portal`).
+ */
+export const userRoleEnum = pgEnum("user_role", [
+  "admin",
+  "pemilik",
+  "penghuni",
+]);
 
 /** Status kamar: Tersedia / Terisi / Perbaikan */
 export const statusKamarEnum = pgEnum("status_kamar", [
@@ -40,6 +49,31 @@ export const statusBayarEnum = pgEnum("status_bayar", [
   "Lunas",
   "Menunggu Konfirmasi",
   "Belum Lunas",
+]);
+
+/**
+ * Status penanganan pengaduan penghuni:
+ * - `pending`  -> baru dilaporkan penghuni, belum ditangani admin;
+ * - `diproses` -> admin sudah memverifikasi di lapangan & sedang menangani;
+ * - `selesai`  -> kendala sudah dituntaskan (dibuktikan lewat catatan admin).
+ */
+export const statusPengaduanEnum = pgEnum("status_pengaduan", [
+  "pending",
+  "diproses",
+  "selesai",
+]);
+
+/**
+ * Alasan sebuah data penghuni dipindahkan ke `arsip_penghuni`
+ * (fitur "Arsip Otomatis & Pengosongan Kamar"):
+ * - `Proses Keluar`   -> penghuni mengakhiri masa sewa (diproses pengelola atau
+ *   diajukan sendiri lewat portal), termasuk keluar sebelum jatuh tempo;
+ * - `Habis Masa Sewa` -> periode sewa terakhir yang sudah Lunas telah berakhir
+ *   (dideteksi otomatis oleh sistem, mis. saat penghuni logout dari portal).
+ */
+export const alasanArsipEnum = pgEnum("alasan_arsip", [
+  "Proses Keluar",
+  "Habis Masa Sewa",
 ]);
 
 /* ================================================================
@@ -185,6 +219,55 @@ export const notifikasi = pgTable(
 );
 
 /* ================================================================
+ * pengaduan — Pengaduan / laporan kendala kamar dari penghuni
+ * ================================================================ */
+
+/**
+ * Alur modul "Pengaduan & Laporan Kendala":
+ * 1. Penghuni mengirim deskripsi kendala dari portal (`/portal/pengaduan`)
+ *    -> baris dibuat dengan `status_penyelesaian = 'pending'`.
+ * 2. Admin memverifikasi di lapangan lalu memperbarui status dari panel
+ *    (`/pengaduan`) menjadi `diproses` / `selesai` + catatan penanganan.
+ * 3. Pemilik Kos memantau tabel ini dari area read-only (`/monitoring/pengaduan`)
+ *    untuk mengontrol kinerja admin secara transparan.
+ */
+export const pengaduan = pgTable(
+  "pengaduan",
+  {
+    /** id_pengaduan (PK). */
+    idPengaduan: uuid("id_pengaduan").primaryKey().defaultRandom(),
+    /** Penghuni pelapor; bila data penghuni dihapus, pengaduannya ikut terhapus. */
+    idPenghuni: uuid("id_penghuni")
+      .notNull()
+      .references(() => penghuni.id, { onDelete: "cascade" }),
+    /** Uraian kendala kamar yang dilaporkan penghuni. */
+    deskripsiKendala: text("deskripsi_kendala").notNull(),
+    /** Tanggal laporan dibuat (tanggal murni, UTC). */
+    tanggalLapor: date("tanggal_lapor", { mode: "date" })
+      .notNull()
+      .defaultNow(),
+    /** Status penanganan oleh admin. */
+    statusPenyelesaian: statusPengaduanEnum("status_penyelesaian")
+      .notNull()
+      .default("pending"),
+    /**
+     * Catatan penanganan admin (mis. hasil verifikasi lapangan / tindakan yang
+     * dilakukan). Ditampilkan ke penghuni & Pemilik Kos agar transparan.
+     */
+    catatanAdmin: text("catatan_admin"),
+    /** Kapan status terakhir diperbarui admin. */
+    ditanganiPada: timestamp("ditangani_pada", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("pengaduan_id_penghuni_idx").on(table.idPenghuni),
+    index("pengaduan_status_idx").on(table.statusPenyelesaian),
+  ]
+);
+
+/* ================================================================
  * transaksi_online — Order pembayaran online lewat payment gateway
  * (Midtrans Snap). Baris `pembayaran` per bulan baru dicatat Lunas
  * saat Midtrans melaporkan status `settlement` (webhook / cek status).
@@ -241,6 +324,79 @@ export const transaksiOnline = pgTable(
 );
 
 /* ================================================================
+ * arsip_penghuni — Arsip mantan penghuni (fitur "Arsip Otomatis &
+ * Pengosongan Kamar")
+ *
+ * Setiap penghuni yang keluar (diproses pengelola, diajukan sendiri dari
+ * portal, atau masa sewanya habis) **disalin sebagai snapshot** ke tabel ini
+ * sebelum kamarnya dikosongkan kembali menjadi "Tersedia". Tabel ini adalah
+ * pusat informasi riwayat penghuni (mis. permintaan data oleh Kepolisian /
+ * Satpol PP) dan sengaja menyimpan salinan identitas + ringkasan riwayat
+ * pembayaran supaya data tidak hilang meski catatan operasional berubah.
+ * ================================================================ */
+
+/** Satu baris riwayat pembayaran yang dibekukan ke dalam arsip. */
+export type RiwayatPembayaranArsip = {
+  bulan: number;
+  tahun: number;
+  jumlahBayar: number;
+  statusBayar: "Lunas" | "Menunggu Konfirmasi" | "Belum Lunas";
+  metodeBayar: string;
+  keterangan: string | null;
+  /** Tanggal ISO (YYYY-MM-DD) atau null untuk tagihan yang belum dibayar. */
+  tanggalBayar: string | null;
+  jatuhTempo: string | null;
+};
+
+export const arsipPenghuni = pgTable(
+  "arsip_penghuni",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * Tautan ke baris `penghuni` asal (snapshot tetap utuh walau data
+     * penghuninya dihapus manual kemudian -> SET NULL).
+     */
+    idPenghuni: uuid("id_penghuni").references(() => penghuni.id, {
+      onDelete: "set null",
+    }),
+    /** Snapshot identitas penghuni saat keluar. */
+    nama: varchar("nama", { length: 255 }).notNull(),
+    jenisKelamin: varchar("jenis_kelamin", { length: 20 }).notNull(),
+    alamat: text("alamat").notNull(),
+    noHp: varchar("no_hp", { length: 20 }).notNull(),
+    /** Snapshot kamar yang ditinggalkan (null bila belum pernah dapat kamar). */
+    noKamar: varchar("no_kamar", { length: 50 }),
+    tipeKamar: varchar("tipe_kamar", { length: 100 }),
+    hargaSewa: integer("harga_sewa"),
+    tglMasuk: date("tgl_masuk", { mode: "date" }).notNull(),
+    /** Tanggal data dipindahkan ke arsip (tanggal keluar penghuni). */
+    tglKeluar: date("tgl_keluar", { mode: "date" }).notNull(),
+    /** Pemicu pengarsipan (lihat enum `alasan_arsip`). */
+    alasan: alasanArsipEnum("alasan").notNull(),
+    /** Ringkasan keuangan saat keluar (dibekukan, tidak ikut berubah). */
+    jumlahPembayaran: integer("jumlah_pembayaran").notNull().default(0),
+    totalPembayaran: integer("total_pembayaran").notNull().default(0),
+    totalTunggakan: integer("total_tunggakan").notNull().default(0),
+    /** Periode terakhir yang sudah Lunas, mis. "September 2026". */
+    periodeTerakhir: varchar("periode_terakhir", { length: 50 }),
+    /** Salinan seluruh riwayat pembayaran milik penghuni. */
+    riwayatPembayaran: jsonb("riwayat_pembayaran")
+      .$type<RiwayatPembayaranArsip[]>()
+      .notNull()
+      .default([]),
+    /** Catatan tambahan saat keluar (mis. alasan dari penghuni/pengelola). */
+    catatan: text("catatan"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("arsip_penghuni_id_penghuni_idx").on(table.idPenghuni),
+    index("arsip_penghuni_tgl_keluar_idx").on(table.tglKeluar),
+  ]
+);
+
+/* ================================================================
  * Relations (untuk query relasional Drizzle)
  * ================================================================ */
 
@@ -255,6 +411,22 @@ export const penghuniRelations = relations(penghuni, ({ one, many }) => ({
   }),
   pembayaran: many(pembayaran),
   transaksiOnline: many(transaksiOnline),
+  pengaduan: many(pengaduan),
+  arsip: many(arsipPenghuni),
+}));
+
+export const arsipPenghuniRelations = relations(arsipPenghuni, ({ one }) => ({
+  penghuni: one(penghuni, {
+    fields: [arsipPenghuni.idPenghuni],
+    references: [penghuni.id],
+  }),
+}));
+
+export const pengaduanRelations = relations(pengaduan, ({ one }) => ({
+  penghuni: one(penghuni, {
+    fields: [pengaduan.idPenghuni],
+    references: [penghuni.id],
+  }),
 }));
 
 export const pembayaranRelations = relations(pembayaran, ({ one }) => ({
@@ -290,5 +462,11 @@ export type NewPembayaran = typeof pembayaran.$inferInsert;
 export type Notifikasi = typeof notifikasi.$inferSelect;
 export type NewNotifikasi = typeof notifikasi.$inferInsert;
 
+export type Pengaduan = typeof pengaduan.$inferSelect;
+export type NewPengaduan = typeof pengaduan.$inferInsert;
+
 export type TransaksiOnline = typeof transaksiOnline.$inferSelect;
 export type NewTransaksiOnline = typeof transaksiOnline.$inferInsert;
+
+export type ArsipPenghuni = typeof arsipPenghuni.$inferSelect;
+export type NewArsipPenghuni = typeof arsipPenghuni.$inferInsert;

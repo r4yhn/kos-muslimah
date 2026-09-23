@@ -141,8 +141,10 @@ export function BayarAwalForm({
         </div>
         <span className={helpClass}>
           Lampirkan foto bukti transfer / QRIS (JPG, PNG, WebP, atau HEIC;
-          maksimal 2 MB). Pengelola akan memverifikasi bukti sebelum status
-          kamar aktif.
+          maksimal 2 MB). Status pembayaran langsung berubah menjadi{" "}
+          <strong className="text-white/70">Lunas</strong> dan kamar Anda aktif
+          begitu form dikirim — bukti tetap tersimpan untuk pemeriksaan
+          pengelola.
         </span>
       </label>
 

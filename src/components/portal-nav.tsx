@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  Bell,
   CreditCard,
   Home,
+  MessageSquareWarning,
   ReceiptText,
 } from "lucide-react";
 import Link from "next/link";
@@ -17,7 +17,13 @@ type PortalNavProps = {
   terkunci: boolean;
 };
 
-/** Navigasi portal penghuni — menyorot link aktif sesuai path. */
+/**
+ * Navigasi portal penghuni — menyorot link aktif sesuai path.
+ *
+ * Catatan: menu **Notifikasi** sengaja TIDAK ditampilkan di navbar (penghuni
+ * tidak perlu tahu urusan jatuh tempo/pengarsipan). Aksesnya dipindahkan ke
+ * kartu **Menu Penghuni** pada beranda portal (`/portal/notifikasi`).
+ */
 export function PortalNav({ terkunci }: PortalNavProps) {
   const pathname = usePathname();
 
@@ -27,7 +33,11 @@ export function PortalNav({ terkunci }: PortalNavProps) {
         { href: "/portal", label: "Beranda", icon: Home },
         { href: "/portal/bayar", label: "Bayar Sewa", icon: CreditCard },
         { href: "/portal/riwayat", label: "Riwayat Pembayaran", icon: ReceiptText },
-        { href: "/portal/notifikasi", label: "Notifikasi", icon: Bell },
+        {
+          href: "/portal/pengaduan",
+          label: "Pengaduan",
+          icon: MessageSquareWarning,
+        },
       ];
 
   function isActive(href: string): boolean {

@@ -5,8 +5,10 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { berandaPeran } from "@/lib/role";
+import type { UserRole } from "@/types/next-auth";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   pages: {
     signIn: "/login",
   },
@@ -59,30 +61,53 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
       }
+
+      /**
+       * Dipicu `unstable_update()` dari halaman profil (`/profil` untuk admin,
+       * `/monitoring/profil` untuk pemilik) setelah identitas akun diubah,
+       * supaya header & sesi langsung memakai nama/email terbaru tanpa perlu
+       * login ulang.
+       */
+      if (trigger === "update") {
+        const data = session as { user?: { name?: string; email?: string } } | null;
+        const namaBaru = data?.user?.name;
+        const emailBaru = data?.user?.email;
+        if (typeof namaBaru === "string" && namaBaru.trim()) {
+          token.name = namaBaru.trim();
+        }
+        if (typeof emailBaru === "string" && emailBaru.trim()) {
+          token.email = emailBaru.trim();
+        }
+      }
+
       return token;
     },
 
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
-        session.user.role = (token.role as "admin" | "penghuni") ?? "admin";
+        session.user.role = (token.role as UserRole) ?? "admin";
       }
       return session;
     },
 
     /**
      * Proteksi route via Proxy (Next.js 16):
-     * - Belum login & bukan /login      -> redirect ke /login (return false)
-     * - Sudah login & mengunjungi /login -> redirect ke beranda sesuai role
-     * - Role "penghuni" hanya boleh di /portal* (pembayaran awal, riwayat);
-     *   role "admin" hanya boleh di panel /dashboard, /kamar, /penghuni,
-     *   /pembayaran, /laporan. Jika menyeberang, redirect ke beranda
-     *   masing-masing.
+     * - Belum login & bukan halaman publik -> redirect ke /login (return false)
+     * - Sudah login & mengunjungi /login    -> redirect ke beranda sesuai role
+     * - Tiap peran hanya boleh di areanya:
+     *     `admin`    -> panel `/dashboard`, `/kamar`, `/penghuni`,
+     *                   `/pembayaran`, `/laporan`, `/pengaduan`, `/notifikasi`,
+     *                   `/profil`, `/akun`;
+     *     `pemilik`  -> area pemantauan read-only `/monitoring*`
+     *                   (termasuk `/monitoring/profil`);
+     *     `penghuni` -> portal `/portal*`.
+     *   Bila menyeberang, sistem mengalihkan ke beranda peran masing-masing.
      *
      * Catatan: JWT lama (sebelum fitur role) tidak punya klaim role -> saat
      * itu seluruh akun memang admin, sehingga diperlakukan sebagai admin.
@@ -103,9 +128,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const isAktifkanPage = pathname === "/daftar-penghuni";
       if (isDaftarPage || isAktifkanPage) {
         return isLoggedIn
-          ? Response.redirect(
-              new URL(role === "penghuni" ? "/portal" : "/dashboard", nextUrl)
-            )
+          ? Response.redirect(new URL(berandaPeran(role), nextUrl))
           : true;
       }
 
@@ -115,17 +138,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         "/penghuni",
         "/pembayaran",
         "/laporan",
+        "/pengaduan",
         "/notifikasi",
+        "/profil",
+        "/akun",
       ];
       const isPanelPath = PANEL_PATHS.some(
         (p) => pathname === p || pathname.startsWith(`${p}/`)
       );
       const isPortalPath = pathname === "/portal" || pathname.startsWith("/portal/");
+      const isMonitoringPath =
+        pathname === "/monitoring" || pathname.startsWith("/monitoring/");
 
       if (isLoginPage) {
         if (isLoggedIn) {
-          const beranda = role === "penghuni" ? "/portal" : "/dashboard";
-          return Response.redirect(new URL(beranda, nextUrl));
+          return Response.redirect(new URL(berandaPeran(role), nextUrl));
         }
         return true;
       }
@@ -136,10 +163,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // Pisahkan area berdasarkan role.
       if (isPortalPath && role !== "penghuni") {
-        return Response.redirect(new URL("/dashboard", nextUrl));
+        return Response.redirect(new URL(berandaPeran(role), nextUrl));
       }
       if (isPanelPath && role !== "admin") {
-        return Response.redirect(new URL("/portal", nextUrl));
+        return Response.redirect(new URL(berandaPeran(role), nextUrl));
+      }
+      if (isMonitoringPath && role !== "pemilik") {
+        return Response.redirect(new URL(berandaPeran(role), nextUrl));
       }
 
       return true;

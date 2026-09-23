@@ -30,23 +30,16 @@ export const metadata: Metadata = {
  * Halaman Pembayaran Awal — satu-satunya halaman yang bisa diakses penghuni
  * baru sebelum "Bayar di Awal" tuntas (menu lain terkunci).
  *
- * Fitur 1B: setelah penghuni mengirim bukti, sistem menyimpan pengajuan
- * "Menunggu Konfirmasi" dan halaman menampilkan status tersebut (bukan form)
- * sampai admin memverifikasi → Lunas → kunci terbuka.
+ * Pembayaran manual (bukti bayar) kini **langsung dicatat Lunas** sehingga kunci
+ * portal & status kamar langsung aktif; panel "menunggu verifikasi" hanya
+ * muncul untuk pengajuan lama yang belum sempat diverifikasi.
  */
-export default async function BayarAwalPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ menunggu?: string | string[] }>;
-}) {
+export default async function BayarAwalPage() {
   const data = await getPortalData();
   if (!data) redirect("/dashboard");
   if (!data.terkunci) redirect("/portal");
 
-  const sp = await searchParams;
-  const baruDikirim = typeof sp.menunggu === "string" && sp.menunggu === "1";
-
-  // Ada pengajuan pembayaran awal yang sedang menunggu verifikasi admin?
+  // Ada pengajuan pembayaran awal (data lama) yang menunggu verifikasi admin?
   const [menunggu] = await db
     .select({ id: pembayaran.id })
     .from(pembayaran)
@@ -109,21 +102,23 @@ export default async function BayarAwalPage({
           resmi. Pilih paket sewa <strong>1, 2, atau 6 bulan</strong> lalu{" "}
           <strong>bayar online otomatis via Midtrans</strong> (Virtual Account,
           QRIS, E-Wallet) — kamar langsung aktif begitu pembayaran diterima.
-          Butuh cara lain? Opsi kirim <em>bukti bayar</em> manual tetap
-          tersedia di bawah.
+          Alternatifnya, kirim <em>bukti bayar</em> manual di bawah: statusnya{" "}
+          <strong className="text-white/80">langsung tercatat Lunas</strong> dan
+          kamar Anda aktif saat itu juga.
         </p>
       </div>
 
-      {baruDikirim ? (
+      {menunggu ? (
         <div
           role="status"
           className="flex items-start gap-2.5 rounded-md border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-100"
         >
           <Hourglass aria-hidden className="mt-0.5 size-4 shrink-0 text-amber-300" />
           <span>
-            <strong className="font-bold">Bukti pembayaran diterima.</strong>{" "}
-            Pengelola akan memverifikasi pengajuan Anda. Status kamar aktif dan
-            menu portal terbuka setelah pembayaran dikonfirmasi.
+            <strong className="font-bold">Pengajuan lama terdeteksi.</strong>{" "}
+            Pembayaran awal Anda sebelumnya masuk sebagai pengajuan yang menunggu
+            verifikasi pengelola. Hubungi pengelola bila ingin dibatalkan lalu
+            kirim ulang — pengajuan baru kini otomatis <strong>Lunas</strong>.
           </span>
         </div>
       ) : null}
@@ -169,14 +164,15 @@ export default async function BayarAwalPage({
                 />
                 <div>
                   <p className="font-display text-lg font-bold tracking-tight text-white">
-                    Pengajuan sedang diverifikasi
+                    Pengajuan lama menunggu verifikasi
                   </p>
                   <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/70">
-                    Bukti pembayaran awal Anda sudah kami terima dan sedang
-                    diperiksa pengelola. Begitu dikonfirmasi{" "}
-                    <strong className="text-white">Lunas</strong>, status kamar
-                    Anda resmi aktif dan seluruh menu portal terbuka. Jika ada
-                    kendala, hubungi pengelola kos.
+                    Bukti pembayaran awal Anda sebelumnya sudah kami terima dan
+                    masih tercatat sebagai pengajuan. Pengelola akan
+                    memverifikasi (menerima →{" "}
+                    <strong className="text-white">Lunas</strong>). Untuk
+                    pengajuan baru, status kini otomatis Lunas tanpa menunggu
+                    verifikasi. Jika ada kendala, hubungi pengelola kos.
                   </p>
                 </div>
               </div>
@@ -203,7 +199,7 @@ export default async function BayarAwalPage({
                   <div className="flex items-center gap-3" aria-hidden>
                     <span className="h-px flex-1 bg-white/10" />
                     <span className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-white/35">
-                      atau kirim bukti manual (diverifikasi pengelola)
+                      atau kirim bukti manual (langsung tercatat Lunas)
                     </span>
                     <span className="h-px flex-1 bg-white/10" />
                   </div>

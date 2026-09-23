@@ -9,6 +9,7 @@ import { KamarBadge } from "@/components/badges";
 import { db } from "@/db";
 import { kamar, penghuni } from "@/db/schema";
 import { formatIDR } from "@/lib/format";
+import { KAPASITAS_KAMAR, labelPenghuniKamar } from "@/lib/kapasitas-kamar";
 import {
   btnDangerIconGhostClass,
   btnIconGhostClass,
@@ -70,7 +71,9 @@ export default async function KamarPage() {
           <h1 className={headingClass}>Data Kamar</h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/60">
             Kelola daftar kamar kos. Status kamar terisi/tersedia diperbarui
-            otomatis saat penghuni mendaftar atau keluar.
+            otomatis saat penghuni mendaftar atau keluar. Setiap kamar dapat
+            dihuni maksimal {KAPASITAS_KAMAR} penghuni (masing-masing berakun
+            portal sendiri) — kolom penghuni menampilkan jumlah slot terpakai.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -156,23 +159,33 @@ export default async function KamarPage() {
                       </td>
                       <td className={`${cellClass} hidden text-white/60 sm:table-cell`}>
                         {daftarNama.length > 0 ? (
-                          <ul className="flex flex-col gap-1.5">
-                            {daftarNama.map((o) => (
-                              <li
-                                key={o.nama}
-                                className="flex flex-wrap items-center gap-1.5"
-                              >
-                                <span>{o.nama}</span>
-                                {o.menungguBayarAwal ? (
-                                  <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] font-medium leading-none text-amber-300">
-                                    menunggu bayar awal
-                                  </span>
-                                ) : null}
-                              </li>
-                            ))}
-                          </ul>
+                          <div className="flex flex-col gap-1.5">
+                            <span className="font-mono text-[10px] font-medium uppercase tracking-[0.15em] text-white/40">
+                              {labelPenghuniKamar(daftarNama.length)} penghuni
+                              {daftarNama.length >= KAPASITAS_KAMAR
+                                ? " · penuh"
+                                : ""}
+                            </span>
+                            <ul className="flex flex-col gap-1.5">
+                              {daftarNama.map((o) => (
+                                <li
+                                  key={o.nama}
+                                  className="flex flex-wrap items-center gap-1.5"
+                                >
+                                  <span>{o.nama}</span>
+                                  {o.menungguBayarAwal ? (
+                                    <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] font-medium leading-none text-amber-300">
+                                      menunggu bayar awal
+                                    </span>
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         ) : (
-                          "—"
+                          <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-white/30">
+                            {labelPenghuniKamar(0)} — kosong
+                          </span>
                         )}
                       </td>
                       <td className={`${cellClass} text-right`}>

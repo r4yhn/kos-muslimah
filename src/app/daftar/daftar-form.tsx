@@ -14,12 +14,17 @@ import {
   textareaClass,
 } from "@/lib/ui";
 import { formatIDR, tanggalInputHariIni } from "@/lib/format";
+import { KAPASITAS_KAMAR, labelPenghuniKamar } from "@/lib/kapasitas-kamar";
 import { daftarPenghuni, type DaftarState } from "./actions";
 
 export type KamarDaftarOption = {
   id: string;
   noKamar: string;
   hargaSewa: number;
+  /** Jumlah penghuni aktif saat ini (termasuk yang menunggu bayar awal). */
+  terisi: number;
+  /** Sisa slot kamar (maksimal KAPASITAS_KAMAR penghuni per kamar). */
+  sisaSlot: number;
 };
 
 type DaftarFormProps = {
@@ -98,17 +103,19 @@ export function DaftarForm({ kamarOptions }: DaftarFormProps) {
         <span className={labelClass}>Pilih Kamar</span>
         <select name="idKamar" required defaultValue="" className={selectClass}>
           <option value="" disabled>
-            — Pilih kamar yang tersedia —
+            — Pilih kamar yang masih tersedia —
           </option>
           {kamarOptions.map((k) => (
             <option key={k.id} value={k.id}>
-              Kamar {k.noKamar} · {formatIDR.format(k.hargaSewa)}/bulan
+              Kamar {k.noKamar} · {formatIDR.format(k.hargaSewa)}/bulan ·{" "}
+              {labelPenghuniKamar(k.terisi)} terisi (sisa {k.sisaSlot} slot)
             </option>
           ))}
         </select>
         <span className={helpClass}>
-          Hanya kamar berstatus Tersedia yang dapat dipilih. Kamar akan
-          diaktifkan resmi (Terisi) setelah Pembayaran Awal lunas.
+          Setiap kamar dapat ditempati maksimal {KAPASITAS_KAMAR} penghuni, dan
+          setiap penghuni punya akun portal sendiri (email &amp; password
+          berbeda). Kamar resmi berstatus Terisi setelah Pembayaran Awal lunas.
         </span>
       </label>
 

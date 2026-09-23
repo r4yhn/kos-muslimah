@@ -21,7 +21,7 @@ export default async function DaftarPage() {
     {
       ikon: UserPlus,
       judul: "1 · Daftar & pilih kamar",
-      teks: "Isi data diri, pilih kamar yang tersedia, dan buat email + password akun portal Anda.",
+      teks: "Isi data diri, pilih kamar yang masih punya slot (maksimal 2 penghuni per kamar), dan buat email + password akun portal Anda sendiri.",
     },
     {
       ikon: ReceiptText,
