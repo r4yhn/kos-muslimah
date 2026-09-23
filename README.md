@@ -250,6 +250,39 @@ npm run dev
 
 Buka http://localhost:3000 → login sebagai admin atau penghuni.
 
+## Deploy
+
+Aplikasi ini siap build produksi (`npm run build`) — seluruh halaman yang
+mengakses database sudah ditandai `force-dynamic`, jadi **tidak ada query DB saat
+build**. Yang perlu disiapkan hanya variabel lingkungan pada platform hosting.
+
+1. **Build command:** `npm run build` · **Start command:** `npm run start`.
+2. **Env wajib** (set di dashboard hosting, untuk environment *Production* dan
+   *Preview*):
+
+   | Variabel | Wajib | Keterangan |
+   | :--- | :--- | :--- |
+   | `DATABASE_URL` | ✅ | Koneksi PostgreSQL Supabase (Session pooler, port 5432). |
+   | `AUTH_SECRET` | ✅ | Rahasia Auth.js (produksi menolak login bila kosong). |
+   | `AUTH_TRUST_HOST` | ✅ | Isi `true` bila hosting memakai proxy/domain sendiri. |
+   | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | opsional | Hanya bila klien Supabase dipakai. |
+   | `MIDTRANS_SERVER_KEY` / `MIDTRANS_CLIENT_KEY` / `MIDTRANS_IS_PRODUCTION` | opsional | Tanpa ini tombol bayar online otomatis disembunyikan; bukti manual tetap jalan. |
+   | `CRON_SECRET` | opsional | Untuk memicu `/api/cron/generate-tagihan` tanpa sesi admin. |
+
+3. **Migrasi database** dijalankan sekali dari mesin lokal/CI (butuh
+   `DATABASE_URL`): `npm run db:migrate` lalu `npm run db:seed`.
+4. **Cron tagihan bulanan** (opsional, Vercel): jadwalkan
+   `/api/cron/generate-tagihan` dan kirim header
+   `Authorization: Bearer $CRON_SECRET`, mis.
+
+   ```jsonc
+   // vercel.json
+   { "crons": [{ "path": "/api/cron/generate-tagihan", "schedule": "0 0 1 * *" }] }
+   ```
+
+5. **Cek sebelum deploy:** `npm run lint` dan `npx tsc --noEmit` harus bersih —
+   `next build` juga menjalankan type-check dan akan gagal bila ada error.
+
 ## Script Berguna
 
 | Script | Fungsi |

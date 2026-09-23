@@ -1,1 +1,0 @@
-console.log('TABLES:', tables.map(t =, ')); 

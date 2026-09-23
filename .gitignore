@@ -30,6 +30,11 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# temp/dev artifacts (script probe & keluaran perintah)
+.tmp-*
+*.log
+*-out.txt
+
 # env files (can opt-in for committing if needed)
 .env*
 !.env.example

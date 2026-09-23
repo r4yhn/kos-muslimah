@@ -19,6 +19,7 @@ export const dynamic = "force-dynamic";
  *   vercel cron "0 0 1 * *" -> https://<host>/api/cron/generate-tagihan
  *
  * Proteksi: bila variabel lingkungan CRON_SECRET diisi, header
+ * `Authorization: Bearer <CRON_SECRET>` (dipakai cron Vercel) atau
  * `x-cron-secret` wajib cocok; bila tidak diisi, hanya sesi admin yang
  * boleh memicu (atau siapa saja saat development karena idempotent).
  */
@@ -27,8 +28,15 @@ export async function GET(request: Request) {
   const isAdmin = session?.user?.role === "admin";
 
   const secret = process.env.CRON_SECRET;
-  const key = request.headers.get("x-cron-secret") ?? "";
-  if (!isAdmin && (!secret || key !== secret)) {
+  const kunciHeader = request.headers.get("x-cron-secret") ?? "";
+  const kunciBearer = (request.headers.get("authorization") ?? "").replace(
+    /^Bearer\s+/i,
+    ""
+  );
+  const kunciCocok =
+    !!secret && (kunciHeader === secret || kunciBearer === secret);
+
+  if (!isAdmin && !kunciCocok) {
     return Response.json(
       { ok: false, error: "Tidak diizinkan." },
       { status: 403 }
