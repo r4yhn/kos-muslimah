@@ -38,11 +38,15 @@ export const metadata: Metadata = {
  * Menu **Arsip** panel pengelola — pusat informasi seluruh mantan penghuni
  * (fitur "Arsip Otomatis & Pengosongan Kamar").
  *
- * Setiap kali penghuni keluar (proses keluar, logout ketika masa sewa habis,
- * atau pemindaian otomatis), data dirinya dipindahkan ke tabel `arsip_penghuni`
+ * Setiap kali penghuni **benar-benar keluar** (proses keluar oleh pengelola,
+ * checkout *Selesai Sewa / Pindah Kos* dari portal, atau pemindaian otomatis
+ * data lama), data dirinya dipindahkan ke tabel `arsip_penghuni`
  * bersama salinan riwayat pembayaran & keterangan kamar yang ditinggalkan —
  * sehingga bila pihak berwenang (Kepolisian / Satpol PP) memerlukan riwayat
  * penghuni, datanya tersedia lengkap tanpa mengganggu data operasional.
+ *
+ * Catatan: tombol *Keluar* (*logout*) pada portal penghuni hanya menghapus sesi
+ * login dan **tidak** menambah data di sini.
  */
 export default async function ArsipPage({
   searchParams,
@@ -186,9 +190,10 @@ export default async function ArsipPage({
             {q || alasan ? "Tidak ada arsip yang cocok." : "Arsip masih kosong."}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-white/50">
-            Data penghuni otomatis masuk ke sini saat penghuni diproses keluar
-            dari menu Penghuni, mengajukan keluar sendiri lewat portal, atau
-            keluar (logout) dari portal penghuni — tanpa menghapus data aslinya.
+            Data penghuni masuk ke sini saat diproses keluar dari menu Penghuni
+            atau saat penghuni menekan <strong className="text-white/70">Selesai
+            Sewa / Pindah Kos</strong> di portal — tanpa menghapus data aslinya.
+            Keluar (<em>logout</em>) biasa tidak menambah arsip.
           </p>
           {q || alasan ? (
             <Link href="/arsip" className={`${btnPrimaryClass} mt-6`}>

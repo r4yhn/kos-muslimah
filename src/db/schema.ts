@@ -67,9 +67,10 @@ export const statusPengaduanEnum = pgEnum("status_pengaduan", [
  * Alasan sebuah data penghuni dipindahkan ke `arsip_penghuni`
  * (fitur "Arsip Otomatis & Pengosongan Kamar"):
  * - `Proses Keluar`   -> penghuni mengakhiri masa sewa (diproses pengelola atau
- *   diajukan sendiri lewat portal), termasuk keluar sebelum jatuh tempo;
+ *   lewat tombol *Selesai Sewa / Pindah Kos* di portal — bukan tombol *Keluar*),
+ *   termasuk keluar sebelum jatuh tempo;
  * - `Habis Masa Sewa` -> periode sewa terakhir yang sudah Lunas telah berakhir
- *   (dideteksi otomatis oleh sistem, mis. saat penghuni logout dari portal).
+ *   (dideteksi otomatis oleh sistem pada pemindaian data lama).
  */
 export const alasanArsipEnum = pgEnum("alasan_arsip", [
   "Proses Keluar",

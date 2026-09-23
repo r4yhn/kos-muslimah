@@ -61,20 +61,28 @@ Aplikasi web manajemen kos berbasis **Next.js (App Router)** dengan **Supabase
   Begitu pembayaran awal lunas (termasuk lewat Midtrans), kunci terbuka dan
   kamar resmi berstatus **"Terisi"**.
 - **Arsip otomatis & pengosongan kamar**: data penghuni **tidak pernah dihapus
-  permanen**. Saat penghuni keluar — diproses pengelola lewat tombol proses
-  keluar di `/penghuni`, atau **langsung ketika penghuni logout dari portal** —
-  identitas, kamar yang ditinggalkan, dan salinan riwayat pembayarannya otomatis
-  dipindahkan ke tabel **`arsip_penghuni`** (menu **Arsip** pada navbar admin),
-  lalu kamar itu kembali ber-status **Tersedia** bila tidak ada penghuni aktif
-  lain. Proses ini **tanpa pemberitahuan apa pun ke penghuni**: tidak ada
-  peringatan jatuh tempo, tidak ada info arsip di navbar portal, dan penghuni
-  tidak pernah dikeluarkan hanya karena tagihan belum dibayar; keterangan jadwal
-  pembayaran (tanggal bayar bulanan dari pembayaran terakhir + jatuh tempo
-  tagihan berikutnya) cukup ditampilkan sebagai info di menu **Bayar Sewa**.
+  permanen**. Pengarsipan hanya terjadi saat penghuni **benar-benar keluar**:
+  diproses pengelola lewat tombol proses keluar di `/penghuni`, atau penghuni
+  sendiri menekan **Selesai Sewa / Pindah Kos** pada navbar portal — identitas,
+  kamar yang ditinggalkan, dan salinan riwayat pembayarannya otomatis dipindahkan
+  ke tabel **`arsip_penghuni`** (menu **Arsip** pada navbar admin), lalu kamar
+  itu kembali ber-status **Tersedia** bila tidak ada penghuni aktif lain.
   Menu **Arsip** menampilkan seluruh mantan penghuni (identitas, kamar, masa
   sewa, ringkasan pembayaran/tunggakan, riwayat pembayaran) dengan filter alasan
   & pencarian — pusat informasi bila Kepolisian/Satpol PP memerlukan riwayat
   penghuni. Helper: `src/lib/arsip.ts`, migrasi `drizzle/0007_*`.
+- **Dua aksi keluar yang terpisah (Keluar ≠ Selesai Sewa)**: tombol **Keluar**
+  pada navbar portal hanya mengakhiri sesi login (Auth.js `signOut`) —
+  **tanpa perubahan data sama sekali** (`arsip_penghuni` tidak bertambah,
+  `penghuni.id_kamar` tidak dilepas, kamar tetap `Terisi`). Jalur *checkout*
+  satu-satunya dari portal adalah tombol **Selesai Sewa / Pindah Kos**
+  (`selesaikanSewa` di `src/app/portal/actions.ts`) yang wajib disetujui lewat
+  modal konfirmasi (`src/components/confirm-modal-form.tsx`); barulah data
+  dipindahkan ke arsip + kamar dikosongkan, lalu sesi ditutup ke `/login`.
+  Tidak ada peringatan jatuh tempo, dan penghuni tidak pernah dikeluarkan hanya
+  karena tagihan belum dibayar; keterangan jadwal pembayaran (tanggal bayar
+  bulanan dari pembayaran terakhir + jatuh tempo tagihan berikutnya) cukup
+  ditampilkan sebagai info di menu **Bayar Sewa**.
 - **Notifikasi otomatis**: tabel `notifikasi` + lonceng pada panel admin
   (penghuni baru mendaftar, order menunggu pembayaran, pembayaran diterima,
   status tagihan berubah menjadi **Lunas** — baik dari portal maupun saat

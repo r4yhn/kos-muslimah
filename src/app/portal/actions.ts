@@ -32,39 +32,62 @@ const METODE_VALID = [
 ] as const;
 
 /**
- * Logout dari portal penghuni — data penghuni otomatis dipindahkan ke arsip.
+ * ============================================================
+ * DUA AKSI KELUAR YANG **TERPISAH** (jangan digabung!)
+ * ============================================================
  *
- * Dipakai tombol *Keluar* pada layout portal. Karena pengarsipan kini menjadi
- * satu-satunya mekanisme keluar dari sisi penghuni (tanpa kartu *Keluar dari
- * Kos* terpisah), tidak ada pemberitahuan apa pun ke penghuni.
+ * 1. `logoutPortal()`   — **Keluar biasa**: hanya menghapus sesi/token login
+ *    (Auth.js `signOut`). TIDAK menyentuh database sama sekali: tidak ada baris
+ *    `arsip_penghuni` yang dibuat, `penghuni.id_kamar` tidak dilepas, kamar
+ *    tetap `Terisi`, dan status penghuni tetap `Aktif`.
+ * 2. `selesaikanSewa()` — **Selesai Sewa / Pindah Kos** (checkout): memindahkan
+ *    data ke `arsip_penghuni` + mengosongkan kamar menjadi `Tersedia`, lalu
+ *    menutup sesi. Hanya boleh dipanggil dari tombol khusus beserta modal
+ *    konfirmasi pada navbar portal (`ConfirmModalForm`), bukan tombol *Keluar*.
  */
-export async function logoutPortal() {
-  await arsipkanPenghuniPadaLogout();
+
+/**
+ * **Logout sesi (Keluar biasa)** — murni mengakhiri sesi login lalu
+ * mengarahkan pengguna ke halaman `/login`. Tanpa efek samping ke database.
+ */
+export async function logoutPortal(): Promise<void> {
   await signOut({ redirectTo: "/login" });
 }
 
 /**
- * Fitur **Arsip Otomatis & Pengosongan Kamar**: saat penghuni keluar (*logout*)
- * dari portal, datanya **tidak dihapus permanen** — seluruh identitas, kamar
- * yang ditinggalkan, dan salinan riwayat pembayarannya dipindahkan otomatis ke
- * tabel `arsip_penghuni` (menu **Arsip** pada panel pengelola), lalu kamar
- * dikembalikan menjadi "Tersedia". Dipakai oleh `logoutPortal`.
+ * **Selesai Sewa / Pindah Kos (checkout)** — dipicu tombol khusus setelah
+ * penghuni menyetujui modal konfirmasi.
+ *
+ * Data penghuni **tidak dihapus permanen**: identitas, kamar yang ditinggalkan,
+ * dan salinan riwayat pembayarannya dipindahkan ke tabel `arsip_penghuni`
+ * (menu **Arsip** pada panel pengelola), `penghuni.id_kamar` dilepas, dan kamar
+ * dikembalikan menjadi **Tersedia** bila tidak ada penghuni aktif lain. Setelah
+ * selesai, sesi portal ditutup dan pengguna diarahkan ke `/login`.
+ *
+ * @param formData berisi `catatanKeluar` (opsional) dari modal konfirmasi.
  */
-async function arsipkanPenghuniPadaLogout(): Promise<void> {
+export async function selesaikanSewa(formData: FormData): Promise<void> {
   const idPenghuni = await idPenghuniDariSesi();
-  if (!idPenghuni) return;
+  if (!idPenghuni) redirect("/portal");
+
+  const catatan = String(formData.get("catatanKeluar") ?? "").trim();
 
   const hasil = await arsipkanPenghuni(
     idPenghuni,
     "Proses Keluar",
-    "Penghuni keluar (logout) dari portal penghuni."
+    catatan || "Penghuni menyelesaikan masa sewa / pindah kos dari portal."
   );
-  if (!hasil) return;
 
-  revalidatePath("/arsip");
-  revalidatePath("/penghuni");
-  revalidatePath("/kamar");
-  revalidatePath("/dashboard");
+  if (hasil) {
+    revalidatePath("/arsip");
+    revalidatePath("/penghuni");
+    revalidatePath("/kamar");
+    revalidatePath("/dashboard");
+    revalidatePath("/pembayaran");
+    revalidatePath("/portal");
+  }
+
+  await signOut({ redirectTo: "/login" });
 }
 
 /** Id data penghuni yang tertaut ke sesi portal yang sedang aktif. */

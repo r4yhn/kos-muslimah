@@ -142,9 +142,13 @@ export default async function PortalBerandaPage({
           </Link>
         </div>
         <p className="mt-4 text-xs leading-relaxed text-white/45">
-          Bila Anda berhenti menghuni kos, cukup keluar (<em>logout</em>) dari
-          portal melalui tombol <strong className="text-white/70">Keluar</strong>{" "}
-          di kanan atas. Ada kendala lain? Silakan hubungi pengelola kos.
+          Tombol <strong className="text-white/70">Keluar</strong> pada navbar
+          hanya mengakhiri sesi login Anda — data keanggotaan tetap utuh dan
+          kamar tidak berubah. Bila Anda benar-benar berhenti menghuni kos
+          (selesai sewa / pindah kos), gunakan tombol{" "}
+          <strong className="text-white/70">Selesai Sewa / Pindah Kos</strong>{" "}
+          pada navbar, lengkapi catatan bila perlu, lalu setujui konfirmasi yang
+          muncul.
         </p>
       </section>
     </div>

@@ -29,8 +29,9 @@ import { HARI_JATUH_TEMPO, hariIniUtc } from "./tagihan";
 /**
  * Fitur **Arsip Otomatis & Pengosongan Kamar**.
  *
- * Setiap penghuni yang keluar — diproses pengelola atau karena keluar/*logout*
- * dari portal — akan:
+ * Setiap penghuni yang **benar-benar keluar** — diproses pengelola, atau
+ * penghuni menekan *Selesai Sewa / Pindah Kos* (checkout, dengan konfirmasi
+ * modal) di portal — akan:
  * 1. disalin sebagai **snapshot** ke tabel `arsip_penghuni` (identitas, kamar
  *    yang ditinggalkan, ringkasan + salinan riwayat pembayarannya) — tidak ada
  *    data yang dihapus permanen;
@@ -72,7 +73,7 @@ export const LABEL_ALASAN_ARSIP: Record<AlasanArsip, string> = {
 /** Penjelasan default yang disimpan di kolom `catatan` bila tidak diisi. */
 export const DESKRIPSI_ALASAN_ARSIP: Record<AlasanArsip, string> = {
   "Proses Keluar":
-    "Penghuni mengakhiri masa sewa (proses keluar) — diproses pengelola, diajukan penghuni lewat portal, atau keluar/logout dari portal; kamar dikosongkan kembali.",
+    "Penghuni mengakhiri masa sewa (checkout *Selesai Sewa / Pindah Kos* di portal atau diproses pengelola lewat menu Penghuni) — kamar dikosongkan kembali. Keluar biasa (*logout*) TIDAK memindahkan data ke arsip.",
   "Habis Masa Sewa":
     "Data lama yang diarsipkan otomatis oleh sistem sebelum aturan arsip saat keluar diberlakukan.",
 };
@@ -181,8 +182,8 @@ export type HasilArsip = {
  *
  * Bersifat **idempotent**: bila penghuni sudah punya baris arsip, fungsi ini
  * tidak melakukan apa pun dan mengembalikan `null`. Aman dipanggil dari server
- * action (proses keluar) maupun secara otomatis (logout portal / pemindaian
- * berkala).
+ * action (proses keluar pengelola, *Selesai Sewa* portal) maupun secara
+ * otomatis saat pemindaian berkala. **Tidak** dipanggil oleh logout sesi.
  *
  * @param idPenghuni data penghuni yang dikeluarkan
  * @param alasan     pemicu pengarsipan (`alasan_arsip`)

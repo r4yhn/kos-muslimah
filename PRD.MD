@@ -191,8 +191,8 @@ tabel ini sebelum kamarnya dikosongkan — tidak ada data yang dihapus permanen
   (`bulan`, `tahun`, `jumlah_bayar`, `status_bayar`, `metode_bayar`,
   `keterangan`, `tanggal_bayar`, `jatuh_tempo`)
 * `catatan`: `text` (nullable) — catatan keluar dari pengelola / keterangan
-  sistem (mis. keluar lewat *logout* portal) atau penjelasan default sesuai
-  alasan
+  sistem (mis. checkout *Selesai Sewa* dari portal) atau penjelasan default
+  sesuai alasan
 * `created_at`: `timestamp with time zone`
 * Indeks: `(id_penghuni)`, `(tgl_keluar)`.
 
@@ -373,23 +373,27 @@ Status: ✅ berjalan · 🔶 sebagian (lihat catatan) · ⏳ roadmap.
   bukti; daftar pengajuan "Menunggu Konfirmasi" dapat dibatalkan penghuni.
 - ✅ `/portal/riwayat` — daftar pembayaran milik sendiri (terbaru di atas).
 - ✅ `/portal/notifikasi` — baca/tandai semua.
-- ✅ **Keluar kos tanpa menu khusus**: kartu *Keluar dari Kos* di beranda portal
-  **dihapus** — penghuni cukup keluar (*logout*) dari portal, pengarsipan data +
-  pengosongan kamar ditangani otomatis di balik layar (lihat poin berikutnya).
+- ✅ **Selesai Sewa / Pindah Kos (checkout eksplisit)**: tombol khusus pada navbar
+  portal penghuni + **modal konfirmasi** (*"Apakah Anda yakin ingin menyelesaikan
+  masa sewa dan keluar dari Kos Pondok Muslimah?"*) beserta catatan keluar
+  opsional — hanya setelah konfirmasi disetujui, data dipindahkan ke arsip &
+  kamar dikosongkan.
 - ✅ **Info jadwal pembayaran di menu *Bayar Sewa***: tanggal pembayaran bulanan
   penghuni (dari pembayaran Lunas terakhir) beserta jatuh tempo tagihan
   berikutnya ditampilkan sebagai **keterangan biasa** di `/portal/bayar` — bukan
   pemberitahuan/peringatan — dan pembayaran tetap bisa dilakukan lebih awal.
-- ✅ **Logout = arsip otomatis**: saat penghuni keluar (*logout*) dari portal,
-  datanya **tidak dihapus permanen** — identitas, kamar yang ditinggalkan, dan
-  salinan riwayat pembayarannya langsung dipindahkan ke tabel `arsip_penghuni`
-  (menu **Arsip** pada panel pengelola) dan kamar dikembalikan menjadi
-  `Tersedia`. Tidak ada pemberitahuan/peringatan kepada penghuni, dan penghuni
+- ✅ **Logout terpisah dari pengarsipan**: tombol *Keluar* pada navbar portal hanya
+  mengakhiri sesi login (Auth.js `signOut`) dan **tidak menyentuh database sama
+  sekali** — `arsip_penghuni` tidak bertambah, `penghuni.id_kamar` tetap, kamar
+  tetap `Terisi`, status penghuni tetap `Aktif` — lalu pengguna diarahkan ke
+  `/login`. Pengarsipan hanyalah efek dari tombol *Selesai Sewa / Pindah Kos*
+  (lihat Module 13). Tidak ada pemberitahuan/peringatan jatuh tempo, dan penghuni
   tidak pernah dikeluarkan hanya karena belum membayar.
-- ✅ **Tanpa pemberitahuan di navbar portal**: lonceng/badge notifikasi dihapus
-  dari navbar portal penghuni (penghuni tidak perlu tahu soal jatuh tempo/
-  pengarsipan). Daftar notifikasi akun tetap dapat dibuka dari kartu **Menu
-  Penghuni** di beranda portal; keterangan jadwal bayar ada di menu *Bayar Sewa*.
+- ✅ **Navbar portal tanpa lonceng notifikasi**: tidak ada badge notifikasi/jatuh
+  tempo pada navbar (penghuni tidak perlu tahu soal jatuh tempo/pengarsipan).
+  Daftar notifikasi akun tetap dapat dibuka dari kartu **Menu Penghuni** di
+  beranda portal; keterangan jadwal bayar ada di menu *Bayar Sewa*. Navbar hanya
+  memuat dua aksi keluar: *Keluar* (sesi) & *Selesai Sewa / Pindah Kos* (checkout).
 - ✅ **Layar "Akun Portal Sudah Tidak Aktif"**: akun mantan penghuni yang masuk
   lagi tidak memakai portal; yang tampil hanya keterangan singkat bahwa akunnya
   sudah tidak aktif + ajakan menghubungi pengelola — **tanpa** informasi arsip
@@ -497,10 +501,12 @@ Status: ✅ berjalan · 🔶 sebagian (lihat catatan) · ⏳ roadmap.
 - ✅ **Dua pemicu pengarsipan** — semuanya memakai satu helper
   (`arsipkanPenghuni()` di `lib/arsip.ts`) agar perilakunya konsisten:
   1. **Proses keluar oleh pengelola** — tombol proses keluar di `/penghuni`;
-  2. **Keluar (*logout*) dari portal** — begitu penghuni menekan tombol *Keluar*
-     pada navbar portal, datanya langsung dipindahkan ke arsip (tanpa syarat
-     pembayaran apa pun) dan kamar dikosongkan; **tanpa pemberitahuan/peringatan
-     apa pun** kepada penghuni (kartu *Keluar dari Kos* terpisah tidak ada lagi).
+  2. **Selesai Sewa / Pindah Kos oleh penghuni** — tombol khusus pada navbar
+     portal beserta **modal konfirmasi** (`ConfirmModalForm`); hanya setelah
+     disetujui, datanya dipindahkan ke arsip (tanpa syarat pembayaran apa pun)
+     dan kamar dikosongkan, lalu sesi ditutup ke `/login`.
+  **Keluar biasa (*logout*) tidak mengarsipkan apa pun** — murni menghapus sesi,
+  sehingga salah tekan *Keluar* tidak lagi mengosongkan kamar/status penghuni.
   Pelengkap: `sinkronkanArsipPenghuni()` (idempotent) dijalankan saat halaman
   `/penghuni` dibuka dan oleh endpoint `/api/cron/generate-tagihan` untuk
   **melengkapi arsip data lama** ber-status `Keluar` yang belum punya baris
@@ -607,10 +613,11 @@ Urutan rekomendasi — dari nilai tertinggi & risiko paling kecil.
   verifikasi) agar status berubah otomatis + notifikasi; kartu verifikasi
   hanya melayani pengajuan lama. Midtrans tetap otomatis lewat `settlement`.
 - **1C. Arsip otomatis & pengosongan kamar** ✅ *selesai* (migrasi `0007`,
-  helper `lib/arsip.ts`, menu `/arsip` pada navbar admin, pemicu proses keluar
-  oleh pengelola / keluar mandiri dari portal / **logout portal otomatis**,
-  pelengkap arsip data lama di `/penghuni` & endpoint cron, plus notifikasi ke
-  admin dan penghuni). Keterangan jadwal pembayaran hanya ditampilkan sebagai
+  helper `lib/arsip.ts`, menu `/arsip` pada navbar admin, pemicu: proses keluar
+  oleh pengelola + tombol **Selesai Sewa / Pindah Kos** (modal konfirmasi) di
+  portal penghuni; tombol *Keluar* hanya menghapus sesi dan **tidak**
+  mengarsipkan. Pelengkap arsip data lama di `/penghuni` & endpoint cron, plus
+  notifikasi ke admin). Keterangan jadwal pembayaran hanya ditampilkan sebagai
   info di menu *Bayar Sewa* (tanpa pemberitahuan/peringatan), dan tidak ada
   pengeluaran penghuni karena tagihan belum dibayar. Lanjutan opsional: export
   PDF arsip, reaktivasi, dan lampiran KTP.

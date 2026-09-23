@@ -1,11 +1,16 @@
-import { LockKeyhole } from "lucide-react";
+import { DoorOpen, LockKeyhole } from "lucide-react";
 
 import { BrandMark } from "@/components/brand-mark";
-import { ConfirmForm } from "@/components/confirm-form";
+import { ConfirmModalForm } from "@/components/confirm-modal-form";
 import { PortalNav } from "@/components/portal-nav";
-import { btnSecondaryClass, eyebrowClass } from "@/lib/ui";
+import {
+  btnSecondaryClass,
+  eyebrowClass,
+  labelClass,
+  textareaClass,
+} from "@/lib/ui";
 import { getPortalData } from "@/lib/portal";
-import { logoutPortal } from "./actions";
+import { logoutPortal, selesaikanSewa } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +22,15 @@ export const dynamic = "force-dynamic";
  * - Saat penghuni baru masih wajib "Pembayaran Awal", menu lain dikunci:
  *   hanya link Pembayaran Awal yang tampil + banner peringatan.
  *   (Pengalihan halaman tetap diperkuat di masing-masing halaman.)
+ * - Dua aksi keluar yang **terpisah** pada navbar portal:
+ *   1. **Keluar** (`logoutPortal`) — hanya mengakhiri sesi login; tidak ada
+ *      perubahan data sama sekali.
+ *   2. **Selesai Sewa / Pindah Kos** (`selesaikanSewa`) — aksi khusus dengan
+ *      modal konfirmasi; barulah data dipindahkan ke arsip + kamar dikosongkan.
  * - Mantan penghuni (status "Keluar" — datanya sudah dipindahkan ke arsip kos
  *   oleh fitur "Arsip Otomatis & Pengosongan Kamar") tidak lagi memakai portal:
  *   yang tampil hanya keterangan bahwa akunnya sudah tidak aktif beserta tombol
- *   keluar. Pengarsipan **tidak diberitahukan** ke penghuni dan tidak ada
- *   informasi arsip/jatuh tempo apa pun pada navbar portal.
+ *   keluar.
  */
 export default async function PortalLayout({
   children,
@@ -108,17 +117,47 @@ export default async function PortalLayout({
                   {email}
                 </p>
               </div>
-              <ConfirmForm
-                action={logoutPortal}
-                confirmMessage="Keluar dari portal penghuni?"
-              >
+              {/* 1) Keluar biasa — hanya mengakhiri sesi login (tanpa efek data). */}
+              <form action={logoutPortal}>
                 <button
                   type="submit"
-                  className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-primary/30 px-4 font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-white/80 transition-all duration-[100ms] ease-brand hover:border-primary hover:bg-primary/10 hover:text-primary active:translate-y-px"
+                  className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-primary/30 px-3.5 font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-white/80 transition-all duration-[100ms] ease-brand hover:border-primary hover:bg-primary/10 hover:text-primary active:translate-y-px"
                 >
                   Keluar
                 </button>
-              </ConfirmForm>
+              </form>
+
+              {/* 2) Selesai Sewa / Pindah Kos — checkout, wajib konfirmasi modal. */}
+              <ConfirmModalForm
+                action={selesaikanSewa}
+                title="Selesai Sewa / Pindah Kos"
+                message={`Apakah Anda yakin ingin menyelesaikan masa sewa dan keluar dari Kos Pondok Muslimah? Data keanggotaan Anda (kamar ${
+                  data.noKamar ?? "—"
+                }) dipindahkan ke arsip pengelola — tidak dihapus permanen — dan kamar dikosongkan kembali untuk penghuni berikutnya.`}
+                confirmLabel="Ya, Selesaikan Sewa"
+                triggerClassName="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border border-red-400/30 px-3.5 font-mono text-[11px] font-medium uppercase tracking-[0.15em] text-red-200/80 transition-all duration-[100ms] ease-brand hover:border-red-400 hover:bg-red-400/10 hover:text-red-200 active:translate-y-px"
+                triggerLabel={
+                  <>
+                    <DoorOpen className="size-4" aria-hidden />
+                    <span className="hidden lg:inline">
+                      Selesai Sewa / Pindah Kos
+                    </span>
+                    <span className="lg:hidden">Selesai Sewa</span>
+                  </>
+                }
+              >
+                <label className={labelClass} htmlFor="catatanKeluar">
+                  Catatan Keluar (opsional)
+                </label>
+                <textarea
+                  id="catatanKeluar"
+                  name="catatanKeluar"
+                  rows={3}
+                  maxLength={500}
+                  placeholder="Mis. pindah tugas ke luar kota, lanjut studi, dsb."
+                  className={textareaClass}
+                />
+              </ConfirmModalForm>
             </div>
           </div>
 
